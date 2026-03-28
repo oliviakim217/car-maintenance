@@ -1,0 +1,21 @@
+version: 1
+
+vehicle:
+  year: 2021
+  make: Mazda
+  model: "3"
+  initial_km: 40000
+  initial_date: "2026-03-28"
+
+mileage:
+  weekday_km: 10
+  weekend_km: 40
+  due_soon_buffer_km: 1000
+  due_soon_buffer_days: 14
+
+excel:
+  log_file: "data/maintenance_log.xlsx"
+
+logging:
+  level: WARNING
+  retention_days: 30

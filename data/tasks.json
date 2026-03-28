@@ -1,0 +1,260 @@
+{
+  "vehicle": {
+    "year": 2021,
+    "make": "Mazda",
+    "model": "3",
+    "current_km": 40000
+  },
+  "tasks": [
+    {
+      "id": "engine_oil_filter",
+      "name": "Engine Oil & Filter",
+      "category": "engine",
+      "interval_km": 16000,
+      "interval_months": 12,
+      "notes": "Replace when wrench indicator light is ON; upper limit is 16,000 km or 12 months. For severe driving conditions (extended idling, dusty/cold/hot/mountainous), replace every 8,000 km or 6 months. Reset engine oil data after every replacement.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "spark_plugs_25t",
+      "name": "Spark Plugs (SKYACTIV-G 2.5T)",
+      "category": "engine",
+      "interval_km": 64000,
+      "interval_months": null,
+      "notes": "Applies to SKYACTIV-G 2.5T engine only. Replace every 64,000 km (40,000 miles).",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "spark_plugs_other",
+      "name": "Spark Plugs (SKYACTIV-G 2.0 / 2.5 non-T)",
+      "category": "engine",
+      "interval_km": 120000,
+      "interval_months": null,
+      "notes": "Applies to all engines except SKYACTIV-G 2.5T. Replace every 120,000 km (75,000 miles).",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "air_filter",
+      "name": "Engine Air Filter",
+      "category": "filters",
+      "interval_km": 56000,
+      "interval_months": 36,
+      "notes": "Replace every 56,000 km (35,000 miles) or 36 months, whichever comes first.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "cabin_air_filter",
+      "name": "Cabin Air Filter",
+      "category": "filters",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Replace every 32,000 km (20,000 miles) or 24 months, whichever comes first.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "drive_belts",
+      "name": "Drive Belts",
+      "category": "engine",
+      "interval_km": 48000,
+      "interval_months": 36,
+      "notes": "Inspect and replace if necessary. Also inspect air conditioner drive belts if equipped. Inspect more frequently under dusty, cold, hot, mountainous, wet, or low-speed/extended-idle conditions.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "engine_coolant_level",
+      "name": "Engine Coolant Level",
+      "category": "fluids",
+      "interval_km": 8000,
+      "interval_months": 6,
+      "notes": "Inspect and top up if necessary. Also check at every refuelling stop.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "engine_coolant_replacement",
+      "name": "Engine Coolant Replacement",
+      "category": "fluids",
+      "interval_km": 96000,
+      "interval_months": 60,
+      "notes": "Replace at first 192,000 km (120,000 miles) or 120 months; after that, every 96,000 km (60,000 miles) or 60 months, whichever comes first. Use Mazda FL-22 coolant; using other coolant may cause serious engine damage.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "fuel_lines_hoses",
+      "name": "Fuel Lines & Hoses",
+      "category": "inspection",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Inspect and replace if necessary. Failure to perform does not void emissions warranty but Mazda recommends adherence to schedule.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "emission_hoses_tubes",
+      "name": "Hoses and Tubes for Emission",
+      "category": "inspection",
+      "interval_km": 96000,
+      "interval_months": 72,
+      "notes": "Inspect and replace if necessary. Failure to perform does not void emissions warranty but Mazda recommends adherence to schedule.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "brake_lines_hoses_connections",
+      "name": "Brake Lines, Hoses and Connections",
+      "category": "brakes",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Inspect and replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "vacuum_brake_booster_hose",
+      "name": "Vacuum Brake Booster and Hose",
+      "category": "brakes",
+      "interval_km": 16000,
+      "interval_months": 12,
+      "notes": "Inspect and replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "brake_clutch_fluid_level",
+      "name": "Brake & Clutch Fluid Level",
+      "category": "fluids",
+      "interval_km": 8000,
+      "interval_months": 6,
+      "notes": "Inspect and top up if necessary. Also check at every refuelling stop.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "disc_brakes",
+      "name": "Disc Brakes",
+      "category": "brakes",
+      "interval_km": 16000,
+      "interval_months": 12,
+      "notes": "Inspect pad thickness, disc condition, and caliper operation; replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "tyre_rotation",
+      "name": "Tyre Rotation",
+      "category": "tyres",
+      "interval_km": 8000,
+      "interval_months": null,
+      "notes": "Rotate every 8,000 km (5,000 miles). After rotation, inflate all tyres to specification and check lug nut torque. Do not rotate unidirectional or asymmetric-tread tyres side-to-side.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "tyre_inflation_wear",
+      "name": "Tyre Inflation Pressure and Tyre Wear",
+      "category": "tyres",
+      "interval_km": 8000,
+      "interval_months": 6,
+      "notes": "Inspect and adjust tyre inflation pressure; inspect for uneven wear or damage. Also inspect spare tyre if equipped. Check at least monthly per owner maintenance guidance.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "steering_operation_linkages",
+      "name": "Steering Operation and Linkages",
+      "category": "inspection",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Inspect and replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "suspension_ball_joints_wheel_bearings",
+      "name": "Front and Rear Suspension, Ball Joints and Wheel Bearing Axial Play",
+      "category": "inspection",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Inspect and replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "body_condition_rust",
+      "name": "Body Condition Inspection (Rust, Corrosion and Perforation)",
+      "category": "body",
+      "interval_km": 16000,
+      "interval_months": 12,
+      "notes": "Inspect body panels for rust, corrosion, and perforation; treat or repair if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "driveshaft_dust_boot",
+      "name": "Driveshaft Dust Boot",
+      "category": "inspection",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Inspect and replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "chassis_body_bolts_nuts",
+      "name": "Bolts and Nuts on Chassis and Body",
+      "category": "inspection",
+      "interval_km": 32000,
+      "interval_months": 24,
+      "notes": "Check torque and tighten if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "exhaust_system_heat_shields",
+      "name": "Exhaust System and Heat Shields",
+      "category": "inspection",
+      "interval_km": 96000,
+      "interval_months": 72,
+      "notes": "Inspect for leaks, damage, and loose heat shields; repair or replace if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "emergency_flat_tyre_kit",
+      "name": "Emergency Flat Tyre Repair Kit",
+      "category": "tyres",
+      "interval_km": null,
+      "interval_months": 12,
+      "notes": "If equipped: inspect annually. Check tyre repair fluid expiration date; replace the fluid bottle before the expiration date.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "function_of_all_lights",
+      "name": "Function of All Lights",
+      "category": "electrical",
+      "interval_km": 16000,
+      "interval_months": 12,
+      "notes": "Inspect all exterior and interior lights for correct operation; replace bulbs if necessary.",
+      "last_done_km": null,
+      "last_done_date": null
+    },
+    {
+      "id": "washer_fluid_level",
+      "name": "Windshield Washer Fluid Level",
+      "category": "fluids",
+      "interval_km": null,
+      "interval_months": 1,
+      "notes": "Check and top up at every refuelling stop per owner maintenance guidance.",
+      "last_done_km": null,
+      "last_done_date": null
+    }
+  ]
+}
