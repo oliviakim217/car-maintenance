@@ -47,7 +47,7 @@ def _load_or_create_workbook(log_path: Path) -> openpyxl.Workbook:
     ws = wb.active
     ws.title = "Maintenance Log"
     ws.append(_HEADER_ROW)
-    logger.info("BEGIN:excel_service action=created_log_file path={log_path}")
+    logger.info(f"BEGIN:excel_service action=created_log_file path={log_path}")
     return wb
 
 
