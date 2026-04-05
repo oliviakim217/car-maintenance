@@ -10,9 +10,9 @@
       "id": "engine_oil_filter",
       "name": "Engine Oil & Filter",
       "category": "engine",
-      "interval_km": 16000,
-      "interval_months": 12,
-      "notes": "Replace when wrench indicator light is ON; upper limit is 16,000 km or 12 months. For severe driving conditions (extended idling, dusty/cold/hot/mountainous), replace every 8,000 km or 6 months. Reset engine oil data after every replacement.",
+      "interval_km": 8000,
+      "interval_months": 6,
+      "notes": "Replace every 8,000 km or 6 months, whichever comes first. Reset engine oil data after every replacement.",
       "last_done_km": 45000,
       "last_done_date": "2025-12-18"
     },
