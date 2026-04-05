@@ -15,6 +15,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # Load .env before anything else so env vars are available during import
@@ -43,8 +44,8 @@ from backend.routes.schedule_routes import router as schedule_router  # noqa: E4
 # Templates
 # ---------------------------------------------------------------------------
 
-_BASE_DIR = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=str(_BASE_DIR / "frontend" / "templates"))
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+templates = Jinja2Templates(directory=str(_PROJECT_ROOT / "frontend" / "templates"))
 
 
 # ---------------------------------------------------------------------------
@@ -56,8 +57,8 @@ templates = Jinja2Templates(directory=str(_BASE_DIR / "frontend" / "templates"))
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler.
 
-    Runs startup tasks (config load, initial reminder check) before the app
-    begins accepting requests, and handles graceful shutdown afterwards.
+    Runs startup tasks (config load) before the app begins accepting requests,
+    and handles graceful shutdown afterwards.
     """
     start_ms = time.monotonic()
     logger.info("BEGIN:app_startup")
@@ -86,6 +87,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Serve static files (CSS, JS, images)
+app.mount("/static", StaticFiles(directory=str(_PROJECT_ROOT / "frontend" / "static")), name="static")
+
 # Mount routers
 app.include_router(schedule_router)
 app.include_router(mileage_router)
@@ -106,7 +110,7 @@ async def serve_dashboard(request: Request) -> HTMLResponse:
     Returns:
         HTMLResponse rendering frontend/templates/dashboard.html.
     """
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(request, "dashboard.html")
 
 
 # ---------------------------------------------------------------------------
@@ -114,4 +118,4 @@ async def serve_dashboard(request: Request) -> HTMLResponse:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

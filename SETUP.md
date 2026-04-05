@@ -70,7 +70,7 @@ APP_LOG_LEVEL=INFO
 Make sure your virtual environment is still active (you should see `(venv)` in your terminal), then run:
 
 ```bash
-python server.py
+python -m backend.main
 ```
 
 Open your browser and go to:
