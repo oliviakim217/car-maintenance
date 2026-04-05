@@ -187,6 +187,16 @@
       "last_done_date": null
     },
     {
+      "id": "rust_protection",
+      "name": "Rust Protection Treatment",
+      "category": "body",
+      "interval_km": null,
+      "interval_months": 12,
+      "notes": "Annual undercoating and rust protection treatment. Schedule in August each year.",
+      "last_done_km": null,
+      "last_done_date": "2025-08-01"
+    },
+    {
       "id": "body_condition_rust",
       "name": "Body Condition Inspection (Rust, Corrosion and Perforation)",
       "category": "body",
