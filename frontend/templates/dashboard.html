@@ -218,6 +218,7 @@
   ───────────────────────────────────────────────────────────── */
   const KM_PER_DAY = 20;
 
+  // Whichever is sooner — km-based or date-based — used for bucket placement.
   function daysUntilDue(task) {
     if (task.status === 'overdue') return -Infinity;
     const byDate = task.days_remaining ?? Infinity;
@@ -225,6 +226,13 @@
       ? Math.round(task.km_remaining / KM_PER_DAY)
       : Infinity;
     return Math.min(byDate, byKm);
+  }
+
+  // km remaining first; fall back to days remaining when no km interval.
+  function sortKey(task) {
+    if (task.status === 'overdue') return -Infinity;
+    if (task.km_remaining != null) return Math.round(task.km_remaining / KM_PER_DAY);
+    return task.days_remaining ?? Infinity;
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -238,10 +246,10 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Sort tasks: most urgent first
+     Sort tasks: by km remaining first, days remaining as fallback
   ───────────────────────────────────────────────────────────── */
   function sortTasks(tasks) {
-    return [...tasks].sort((a, b) => daysUntilDue(a) - daysUntilDue(b));
+    return [...tasks].sort((a, b) => sortKey(a) - sortKey(b));
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -267,6 +275,9 @@
           <div class="task-name-wrap">
             <span class="task-name">${escapeHtml(task.name)}</span>
             ${categoryBadge(task.category)}
+          </div>
+          <div class="task-interval">
+            ${task.interval_km ? `Every ${fmtKm(task.interval_km)} km` : ''}${task.interval_km && task.interval_months ? ' &nbsp;·&nbsp; ' : ''}${task.interval_months ? `Every ${task.interval_months} months` : ''}
           </div>
           ${task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : ''}
           <button class="btn btn-primary btn-sm mark-done-btn"
