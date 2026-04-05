@@ -13,8 +13,8 @@
       "interval_km": 16000,
       "interval_months": 12,
       "notes": "Replace when wrench indicator light is ON; upper limit is 16,000 km or 12 months. For severe driving conditions (extended idling, dusty/cold/hot/mountainous), replace every 8,000 km or 6 months. Reset engine oil data after every replacement.",
-      "last_done_km": null,
-      "last_done_date": null
+      "last_done_km": 45000,
+      "last_done_date": "2025-12-18"
     },
     {
       "id": "spark_plugs_25t",
@@ -147,22 +147,22 @@
       "last_done_date": null
     },
     {
-      "id": "tyre_rotation",
-      "name": "Tyre Rotation",
-      "category": "tyres",
+      "id": "tire_rotation",
+      "name": "Tire Rotation",
+      "category": "tires",
       "interval_km": 8000,
       "interval_months": null,
-      "notes": "Rotate every 8,000 km (5,000 miles). After rotation, inflate all tyres to specification and check lug nut torque. Do not rotate unidirectional or asymmetric-tread tyres side-to-side.",
+      "notes": "Rotate every 8,000 km (5,000 miles). After rotation, inflate all tires to specification and check lug nut torque. Do not rotate unidirectional or asymmetric-tread tires side-to-side.",
       "last_done_km": null,
       "last_done_date": null
     },
     {
-      "id": "tyre_inflation_wear",
-      "name": "Tyre Inflation Pressure and Tyre Wear",
-      "category": "tyres",
+      "id": "tire_inflation_wear",
+      "name": "Tire Inflation Pressure and Tire Wear",
+      "category": "tires",
       "interval_km": 8000,
       "interval_months": 6,
-      "notes": "Inspect and adjust tyre inflation pressure; inspect for uneven wear or damage. Also inspect spare tyre if equipped. Check at least monthly per owner maintenance guidance.",
+      "notes": "Inspect and adjust tire inflation pressure; inspect for uneven wear or damage. Also inspect spare tire if equipped. Check at least monthly per owner maintenance guidance.",
       "last_done_km": null,
       "last_done_date": null
     },
@@ -227,14 +227,14 @@
       "last_done_date": null
     },
     {
-      "id": "emergency_flat_tyre_kit",
-      "name": "Emergency Flat Tyre Repair Kit",
-      "category": "tyres",
+      "id": "emergency_flat_tire_kit",
+      "name": "Emergency Flat Tire Repair Kit",
+      "category": "tires",
       "interval_km": null,
       "interval_months": 12,
-      "notes": "If equipped: inspect annually. Check tyre repair fluid expiration date; replace the fluid bottle before the expiration date.",
-      "last_done_km": null,
-      "last_done_date": null
+      "notes": "If equipped: inspect annually. Check tire repair fluid expiration date; replace the fluid bottle before the expiration date.",
+      "last_done_km": 1,
+      "last_done_date": "2021-04-05"
     },
     {
       "id": "function_of_all_lights",
