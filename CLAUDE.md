@@ -2,6 +2,16 @@
 
 @.claude/python-rules.md
 
+## Progressive Disclosure
+
+Task- and topic-specific instructions live in `.claude/` as separate files. Before starting work,
+decide which files below are relevant to the task and read them. Do not read files that are not
+relevant.
+
+| File | When to read |
+|------|--------------|
+| `.claude/python-rules.md` | Any time you write or modify Python code |
+
 ## General
 
 1. Always follow programming best practices.
@@ -82,12 +92,22 @@ Never skip or reorder these stages.
 6. Business rules, field mappings, dropdown values → YAML config.
 7. Credentials, secrets, URLs → `.env` file only. Never in YAML.
 
+## Version Control
+
+1. **Adding New Features or Fixing Bugs** — When you work on a new feature or bug, create a git branch first. Then work on changes in that branch for the remainder of the session.
+2. **Branch Naming** — Use prefixes to identify branch purpose: `feature/`, `bugfix/`, `hotfix/`, `chore/`. Example: `feature/maintenance-reminders` or `bugfix/mileage-validation`.
+3. **Branch from Latest** — Always pull the latest `main` before creating a new branch to avoid unnecessary merge conflicts.
+4. **Atomic Commits** — Each commit should represent one logical change. Do not bundle unrelated changes in a single commit.
+5. **Commit Messages** — Write meaningful commit messages in imperative mood. Example: `Add oil change reminder logic` not `stuff` or `changes`.
+6. **Never Commit Secrets** — `.env` must never be committed. Confirm `.gitignore` includes `.env` before the first commit on any new branch.
+7. **Merge via Pull Request** — Do not push directly to `main`. All changes must go through a pull request and be reviewed before merging.
+
 ## Testing
 
 1. Test data goes in `tests/test_data/`. Use realistic but fake data.
 2. Always test: happy path, missing fields, invalid formats, API failure/timeout, edge cases.
-3. Code must be testable without modifying `server.py`.
-4. Use dependency injection so external clients (Gmail, Google Sheets) can be mocked.
+3. Code must be testable without modifying `backend/main.py`.
+4. Use dependency injection so external clients (Excel) can be mocked.
 
 ## Project Structure
 
@@ -102,10 +122,11 @@ project-root/
 ├── configs/
 │   ├── dev/             # YAML config files for dev environment
 │   └── prod/            # YAML config files for prod environment
+├── backend/
+│   └── main.py          # Entry point — wiring only, no business logic
 ├── tests/
 │   └── test_data/
-├── .env                 # Secrets and credentials only — never commit
-└── server.py            # Entry point — wiring only, no business logic
+└── .env                 # Secrets and credentials only — never commit
 ```
 
 ### Structure Rules
@@ -115,5 +136,5 @@ project-root/
 3. **Config-driven by default.** Business rules, field mappings, toggle flags, dropdown values, limits, and thresholds belong in YAML config — not hardcoded in Python.
 4. **Config controls behavior.** If a business rule might ever change, it goes in config. Code should read the value; it should never own the value.
 5. **Environment separation is mandatory.** `configs/dev/` and `configs/prod/` are separate. Environment is selected by `APP_ENV` — never hardcoded.
-6. **`server.py` is wiring only.** It registers routes and starts the server. No logic, no config reading, no direct DB calls.
+6. **`backend/main.py` is wiring only.** It registers routes and starts the server. No logic, no config reading, no direct DB calls.
 7. **Shared code goes in `utils/`.** If two modules need the same helper, it moves to `utils/` — not copy-pasted.
