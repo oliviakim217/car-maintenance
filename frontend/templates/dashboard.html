@@ -89,19 +89,6 @@
     </div>
   </div>
 
-  <!-- Tab bar -->
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="overdue" onclick="switchTab('overdue')">
-      Overdue / Never Done <span class="tab-badge" id="badge-overdue">0</span>
-    </button>
-    <button class="tab-btn" data-tab="due_soon" onclick="switchTab('due_soon')">
-      Due Soon <span class="tab-badge" id="badge-due_soon">0</span>
-    </button>
-    <button class="tab-btn" data-tab="ok" onclick="switchTab('ok')">
-      All Good <span class="tab-badge" id="badge-ok">0</span>
-    </button>
-  </div>
-
   <!-- Task list -->
   <div id="tasks-container">
     <!-- Rendered by JS -->
@@ -212,91 +199,93 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Status colour helper for meta values
+     Escape HTML
   ───────────────────────────────────────────────────────────── */
-  function remainingClass(task) {
-    if (task.status === 'overdue' || task.status === 'never_done') return 'highlight-red';
-    if (task.status === 'due_soon') return 'highlight-amber';
-    return 'highlight-green';
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Render a single task card
+     Estimated days until due — uses whichever is sooner:
+     calendar days_remaining or km_remaining converted to days.
+     KM_PER_DAY is a rough average used only for sorting/bucketing.
   ───────────────────────────────────────────────────────────── */
-  function buildTaskCard(task, currentKm) {
-    const statusClass = `status-${task.status}`;
+  const KM_PER_DAY = 20;
 
-    const lastDone = task.last_done_km != null || task.last_done_date != null
-      ? `${task.last_done_date ? fmtDate(task.last_done_date) : '?'} — ${task.last_done_km != null ? fmtKm(task.last_done_km) + ' km' : '?'}`
-      : 'Never';
+  function daysUntilDue(task) {
+    if (task.status === 'overdue' || task.status === 'never_done') return -Infinity;
+    const byDate = task.days_remaining ?? Infinity;
+    const byKm   = task.km_remaining != null
+      ? Math.round(task.km_remaining / KM_PER_DAY)
+      : Infinity;
+    return Math.min(byDate, byKm);
+  }
 
-    const nextDue = task.next_due_km != null || task.next_due_date != null
-      ? `${task.next_due_date ? fmtDate(task.next_due_date) : '?'}${task.next_due_km != null ? ' / ' + fmtKm(task.next_due_km) + ' km' : ''}`
-      : '—';
+  /* ─────────────────────────────────────────────────────────────
+     Time bucket (0 = <3 months, 1 = 3-6 months, 2 = >6 months)
+  ───────────────────────────────────────────────────────────── */
+  function getTimeBucket(task) {
+    const days = daysUntilDue(task);
+    if (days <= 90)  return 0;
+    if (days <= 180) return 1;
+    return 2;
+  }
 
-    const hl = remainingClass(task);
+  /* ─────────────────────────────────────────────────────────────
+     Sort tasks: most urgent first
+  ───────────────────────────────────────────────────────────── */
+  function sortTasks(tasks) {
+    return [...tasks].sort((a, b) => daysUntilDue(a) - daysUntilDue(b));
+  }
 
-    const kmRemaining = task.km_remaining != null
-      ? `<div class="meta-item">
-           <span class="meta-label">Km Remaining</span>
-           <span class="meta-value ${hl}">${fmtKm(task.km_remaining)} km</span>
-         </div>`
-      : '';
+  /* ─────────────────────────────────────────────────────────────
+     Checkmark for the active bucket cell
+  ───────────────────────────────────────────────────────────── */
+  function buildDueCell() {
+    return `<span class="checkmark">&#10003;</span>`;
+  }
 
-    const daysRemaining = task.days_remaining != null
-      ? `<div class="meta-item">
-           <span class="meta-label">Days Remaining</span>
-           <span class="meta-value ${hl}">${task.days_remaining} days</span>
-         </div>`
-      : '';
-
-    const notes = task.notes
-      ? `<div class="task-notes">${escapeHtml(task.notes)}</div>`
-      : '';
-
-    const safeId = escapeHtml(task.id);
+  /* ─────────────────────────────────────────────────────────────
+     Build a table row for one task
+  ───────────────────────────────────────────────────────────── */
+  function buildTaskRow(task, currentKm) {
+    const safeId    = escapeHtml(task.id);
+    const bucket    = getTimeBucket(task);
     const prefillKm = currentKm ? Math.round(currentKm) : '';
+    const cells     = ['', '', ''];
+    cells[bucket]   = buildDueCell(task);
 
     return `
-      <div class="task-card ${statusClass}" id="task-card-${safeId}">
-        <div class="task-header">
-          <div class="task-title-row">
+      <tr class="task-row status-${task.status}" id="task-row-${safeId}">
+        <td class="col-task">
+          <div class="task-name-wrap">
             <span class="task-name">${escapeHtml(task.name)}</span>
             ${categoryBadge(task.category)}
           </div>
-          <button class="btn btn-primary btn-sm" onclick="toggleMarkDone('${safeId}')">Mark as Done</button>
-        </div>
-
-        <div class="task-meta">
-          <div class="meta-item">
-            <span class="meta-label">Interval</span>
-            <span class="meta-value">${task.interval_km ? fmtKm(task.interval_km) + ' km' : ''}${task.interval_km && task.interval_months ? ' / ' : ''}${task.interval_months ? task.interval_months + ' mo' : ''}</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Last Done</span>
-            <span class="meta-value">${lastDone}</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Next Due</span>
-            <span class="meta-value">${nextDue}</span>
-          </div>
-          ${kmRemaining}
-          ${daysRemaining}
-        </div>
-
-        ${notes}
-
-        <!-- Mark as done inline form -->
-        <div class="mark-done-form-wrapper">
-          <form class="mark-done-form" id="done-form-${safeId}" autocomplete="off"
+          ${task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : ''}
+          <button class="btn btn-primary btn-sm mark-done-btn"
+                  onclick="toggleMarkDone('${safeId}')">Mark as Done</button>
+        </td>
+        <td class="col-bucket col-urgent">${cells[0]}</td>
+        <td class="col-bucket col-medium">${cells[1]}</td>
+        <td class="col-bucket col-later">${cells[2]}</td>
+      </tr>
+      <tr class="mark-done-row" id="done-row-${safeId}">
+        <td colspan="4">
+          <form class="mark-done-form open" id="done-form-${safeId}" autocomplete="off"
                 onsubmit="submitMarkDone(event, '${safeId}')">
             <div class="form-row">
               <div class="form-group">
                 <label for="done-km-${safeId}">Odometer at Completion</label>
                 <div class="input-with-unit">
                   <input type="number" id="done-km-${safeId}" name="done_km"
-                         min="0" placeholder="e.g. 45000"
-                         value="${prefillKm}" required />
+                         min="0" placeholder="e.g. 45000" value="${prefillKm}" required />
                   <span class="input-unit">km</span>
                 </div>
               </div>
@@ -317,96 +306,43 @@
                       onclick="toggleMarkDone('${safeId}', true)">Cancel</button>
             </div>
           </form>
-        </div>
-      </div>
+        </td>
+      </tr>
     `;
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Escape HTML
-  ───────────────────────────────────────────────────────────── */
-  function escapeHtml(str) {
-    if (str == null) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  /* ─────────────────────────────────────────────────────────────
-     Tab state
-  ───────────────────────────────────────────────────────────── */
-  let _allTasks   = [];
-  let _activeTab  = 'overdue';
-
-  function tabGroup(task) {
-    if (task.status === 'overdue' || task.status === 'never_done') return 'overdue';
-    if (task.status === 'due_soon') return 'due_soon';
-    return 'ok';
-  }
-
-  function switchTab(tab) {
-    _activeTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-    renderTabContent(_allTasks, _currentKm);
-  }
-
-  function renderTabContent(tasks, currentKm) {
-    const filtered = tasks.filter(t => tabGroup(t) === _activeTab);
-    const sorted   = [...filtered].sort((a, b) => {
-      if (a.km_remaining == null && b.km_remaining == null) return 0;
-      if (a.km_remaining == null) return 1;
-      if (b.km_remaining == null) return -1;
-      return a.km_remaining - b.km_remaining;
-    });
-
-    const empty = {
-      overdue:  'No overdue or never-done tasks — great work!',
-      due_soon: 'Nothing coming due soon.',
-      ok:       'No tasks in this category yet.',
-    };
-
-    const html = sorted.length
-      ? sorted.map(t => buildTaskCard(t, currentKm)).join('')
-      : `<p class="empty-section">${empty[_activeTab]}</p>`;
-
-    $('tasks-container').innerHTML = `<div class="task-list">${html}</div>`;
-  }
-
-  /* ─────────────────────────────────────────────────────────────
-     Render task list
+     Render task table
   ───────────────────────────────────────────────────────────── */
   function renderTasks(tasks, currentKm) {
-    _allTasks = tasks;
+    const sorted = sortTasks(tasks);
+    const rows   = sorted.map(t => buildTaskRow(t, currentKm)).join('');
 
-    // Update tab badges
-    const counts = { overdue: 0, due_soon: 0, ok: 0 };
-    tasks.forEach(t => counts[tabGroup(t)]++);
-    Object.entries(counts).forEach(([key, n]) => {
-      const el = $(`badge-${key}`);
-      if (el) el.textContent = n;
-    });
-
-    // Auto-select the first non-empty tab
-    const priority = ['overdue', 'due_soon', 'ok'];
-    const firstNonEmpty = priority.find(tab => counts[tab] > 0) ?? 'overdue';
-    switchTab(firstNonEmpty);
+    $('tasks-container').innerHTML = `
+      <table class="task-table">
+        <thead>
+          <tr>
+            <th class="col-task">Type of Work</th>
+            <th class="col-bucket col-urgent">Less than 3 months</th>
+            <th class="col-bucket col-medium">3–6 months</th>
+            <th class="col-bucket col-later">More than 6 months</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Toggle mark-done form
+     Toggle mark-done form row
   ───────────────────────────────────────────────────────────── */
   function toggleMarkDone(taskId, forceClose = false) {
-    const form = document.getElementById(`done-form-${taskId}`);
-    if (!form) return;
+    const row = document.getElementById(`done-row-${taskId}`);
+    if (!row) return;
     if (forceClose) {
-      form.classList.remove('open');
+      row.style.display = 'none';
     } else {
-      form.classList.toggle('open');
+      row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
     }
   }
 

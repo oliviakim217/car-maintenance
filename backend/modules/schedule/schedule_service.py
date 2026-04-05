@@ -102,24 +102,28 @@ def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> Task
     interval_km: Optional[int] = task.get("interval_km")
     interval_months: Optional[int] = task.get("interval_months")
 
-    # Guard: never done
-    if last_done_km is None and last_done_date is None:
-        return TaskResult(
-            **task,
-            status=TaskStatus.never_done,
-        )
+    is_never_done = last_done_km is None and last_done_date is None
+
+    # For never-done tasks use vehicle initial values as the baseline so that
+    # km_remaining and days_remaining are still computed and available to the UI.
+    if is_never_done:
+        baseline_km: Optional[int] = cfg.vehicle.initial_km if interval_km else None
+        baseline_date: Optional[str] = cfg.vehicle.initial_date if interval_months else None
+    else:
+        baseline_km = last_done_km
+        baseline_date = last_done_date
 
     next_due_km: Optional[int] = None
     next_due_date: Optional[date] = None
     km_remaining: Optional[int] = None
     days_remaining: Optional[int] = None
 
-    if last_done_km is not None and interval_km is not None:
-        next_due_km = last_done_km + interval_km
+    if baseline_km is not None and interval_km is not None:
+        next_due_km = baseline_km + interval_km
         km_remaining = next_due_km - current_km
 
-    if last_done_date is not None and interval_months is not None:
-        next_due_date = _resolve_next_due_date(last_done_date, interval_months)
+    if baseline_date is not None and interval_months is not None:
+        next_due_date = _resolve_next_due_date(baseline_date, interval_months)
         days_remaining = (next_due_date - current_date).days
 
     # Determine status — overdue takes priority over due_soon
@@ -128,6 +132,8 @@ def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> Task
 
     if km_overdue or date_overdue:
         status = TaskStatus.overdue
+    elif is_never_done:
+        status = TaskStatus.never_done
     else:
         buf_km = cfg.mileage.due_soon_buffer_km
         buf_days = cfg.mileage.due_soon_buffer_days
