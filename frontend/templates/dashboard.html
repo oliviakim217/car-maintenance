@@ -219,7 +219,7 @@
   const KM_PER_DAY = 20;
 
   function daysUntilDue(task) {
-    if (task.status === 'overdue' || task.status === 'never_done') return -Infinity;
+    if (task.status === 'overdue') return -Infinity;
     const byDate = task.days_remaining ?? Infinity;
     const byKm   = task.km_remaining != null
       ? Math.round(task.km_remaining / KM_PER_DAY)
