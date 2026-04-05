@@ -218,7 +218,7 @@
   ───────────────────────────────────────────────────────────── */
   const KM_PER_DAY = 20;
 
-  // Whichever is sooner — km-based or date-based — used for bucket placement.
+  // Returns estimated days until due — whichever trigger (km or date) comes first.
   function daysUntilDue(task) {
     if (task.status === 'overdue') return -Infinity;
     const byDate = task.days_remaining ?? Infinity;
@@ -226,13 +226,6 @@
       ? Math.round(task.km_remaining / KM_PER_DAY)
       : Infinity;
     return Math.min(byDate, byKm);
-  }
-
-  // km remaining first; fall back to days remaining when no km interval.
-  function sortKey(task) {
-    if (task.status === 'overdue') return -Infinity;
-    if (task.km_remaining != null) return Math.round(task.km_remaining / KM_PER_DAY);
-    return task.days_remaining ?? Infinity;
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -246,10 +239,10 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Sort tasks: by km remaining first, days remaining as fallback
+     Sort tasks by whichever due trigger (km or date) comes first
   ───────────────────────────────────────────────────────────── */
   function sortTasks(tasks) {
-    return [...tasks].sort((a, b) => sortKey(a) - sortKey(b));
+    return [...tasks].sort((a, b) => daysUntilDue(a) - daysUntilDue(b));
   }
 
   /* ─────────────────────────────────────────────────────────────
