@@ -1,6 +1,10 @@
 # Environment
 .env
 
+# Runtime data (written by the app — not source controlled)
+data/mileage.json
+data/maintenance_log.xlsx
+
 # Python
 __pycache__/
 *.py[cod]
