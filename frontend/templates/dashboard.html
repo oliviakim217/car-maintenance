@@ -4,329 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Car Maintenance — 2021 Mazda 3</title>
-  <style>
-    /* ── Reset & Base ─────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.5;
-      background: #f0f2f5;
-      color: #1a1a2e;
-    }
-
-    /* ── Header ──────────────────────────────────────────────── */
-    header {
-      background: #1a1a2e;
-      color: #fff;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 60px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-left { display: flex; align-items: baseline; gap: 12px; }
-    .header-title { font-size: 1.2rem; font-weight: 700; letter-spacing: .3px; }
-    .header-sub {
-      font-size: .85rem;
-      color: #a0aec0;
-      font-weight: 400;
-    }
-
-    /* ── Toast ───────────────────────────────────────────────── */
-    #toast {
-      position: fixed;
-      bottom: 28px;
-      right: 28px;
-      min-width: 260px;
-      max-width: 380px;
-      padding: 14px 18px;
-      border-radius: 8px;
-      font-size: .9rem;
-      font-weight: 500;
-      box-shadow: 0 4px 16px rgba(0,0,0,.18);
-      opacity: 0;
-      transform: translateY(12px);
-      transition: opacity .25s, transform .25s;
-      pointer-events: none;
-      z-index: 999;
-    }
-    #toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    #toast.success { background: #22c55e; color: #fff; }
-    #toast.error   { background: #ef4444; color: #fff; }
-
-    /* ── Spinner overlay ─────────────────────────────────────── */
-    #spinner-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,.55);
-      z-index: 500;
-      align-items: center;
-      justify-content: center;
-    }
-    #spinner-overlay.active { display: flex; }
-    .spinner {
-      width: 44px; height: 44px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Main layout ─────────────────────────────────────────── */
-    main {
-      max-width: 960px;
-      margin: 28px auto;
-      padding: 0 16px 60px;
-    }
-
-    /* ── Card base ───────────────────────────────────────────── */
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 1px 6px rgba(0,0,0,.08);
-      padding: 20px 24px;
-    }
-
-    /* ── Mileage card ────────────────────────────────────────── */
-    #mileage-section {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin-bottom: 28px;
-    }
-
-    .mileage-card { flex: 1 1 320px; }
-
-    .mileage-stats { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
-
-    .stat-block { display: flex; flex-direction: column; }
-    .stat-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .6px; color: #64748b; font-weight: 600; margin-bottom: 2px; }
-    .stat-value { font-size: 2rem; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
-    .stat-value.large { font-size: 2.6rem; }
-    .stat-value span.unit { font-size: 1rem; font-weight: 500; color: #94a3b8; margin-left: 3px; }
-
-    .stat-secondary { font-size: .95rem; color: #334155; }
-
-    /* inline update form */
-    #odometer-form-wrapper { margin-top: 14px; }
-    #odometer-form {
-      display: none;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 10px;
-      gap: 10px;
-      flex-direction: column;
-    }
-    #odometer-form.open { display: flex; }
-
-    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; }
-    .form-group label { font-size: .78rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .5px; }
-
-    input[type="number"],
-    input[type="date"],
-    input[type="text"],
-    textarea {
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-size: .92rem;
-      font-family: inherit;
-      color: #1a1a2e;
-      background: #fff;
-      width: 100%;
-      transition: border-color .15s;
-    }
-    input:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-
-    .input-with-unit { position: relative; }
-    .input-with-unit input { padding-right: 36px; }
-    .input-unit {
-      position: absolute;
-      right: 10px; top: 50%; transform: translateY(-50%);
-      font-size: .78rem; color: #94a3b8; font-weight: 600; pointer-events: none;
-    }
-
-    /* ── Buttons ─────────────────────────────────────────────── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
-      border-radius: 7px;
-      font-size: .88rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: background .15s, box-shadow .15s, opacity .15s;
-      white-space: nowrap;
-    }
-    .btn:disabled { opacity: .55; cursor: not-allowed; }
-
-    .btn-primary   { background: #3b82f6; color: #fff; }
-    .btn-primary:hover:not(:disabled)   { background: #2563eb; }
-
-    .btn-success   { background: #22c55e; color: #fff; }
-    .btn-success:hover:not(:disabled)   { background: #16a34a; }
-
-    .btn-amber     { background: #f59e0b; color: #fff; }
-    .btn-amber:hover:not(:disabled)     { background: #d97706; }
-
-    .btn-ghost {
-      background: transparent;
-      color: #475569;
-      border: 1px solid #cbd5e1;
-    }
-    .btn-ghost:hover:not(:disabled) { background: #f1f5f9; }
-
-    .btn-sm { padding: 6px 12px; font-size: .82rem; }
-
-    /* ── Section headers ─────────────────────────────────────── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 32px 0 14px;
-    }
-    .section-header h2 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #1a1a2e;
-    }
-    .section-count {
-      background: #e2e8f0;
-      color: #475569;
-      font-size: .75rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 99px;
-    }
-
-    /* ── Task cards ──────────────────────────────────────────── */
-    .task-list { display: flex; flex-direction: column; gap: 10px; }
-
-    .task-card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
-      border-left: 4px solid transparent;
-      padding: 16px 18px;
-      transition: box-shadow .15s;
-    }
-    .task-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.11); }
-
-    .task-card.status-overdue,
-    .task-card.status-never_done { background: #fff5f5; border-left-color: #ef4444; }
-    .task-card.status-due_soon   { background: #fffbf0; border-left-color: #f59e0b; }
-    .task-card.status-ok         { background: #f0fdf4; border-left-color: #22c55e; }
-
-    .task-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .task-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .task-name { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 9px;
-      border-radius: 99px;
-      font-size: .7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      background: #e2e8f0;
-      color: #475569;
-    }
-    .badge-engine    { background: #dbeafe; color: #1d4ed8; }
-    .badge-oil       { background: #dbeafe; color: #1d4ed8; }
-    .badge-tyres     { background: #fce7f3; color: #be185d; }
-    .badge-tyre      { background: #fce7f3; color: #be185d; }
-    .badge-brakes    { background: #fee2e2; color: #b91c1c; }
-    .badge-brake     { background: #fee2e2; color: #b91c1c; }
-    .badge-fluids    { background: #d1fae5; color: #065f46; }
-    .badge-fluid     { background: #d1fae5; color: #065f46; }
-    .badge-cooling   { background: #cffafe; color: #0e7490; }
-    .badge-filters   { background: #ede9fe; color: #6d28d9; }
-    .badge-filter    { background: #ede9fe; color: #6d28d9; }
-    .badge-lighting  { background: #fef9c3; color: #854d0e; }
-    .badge-electrical{ background: #fef9c3; color: #854d0e; }
-    .badge-suspension{ background: #ffedd5; color: #9a3412; }
-    .badge-belts     { background: #e0f2fe; color: #0369a1; }
-    .badge-belt      { background: #e0f2fe; color: #0369a1; }
-    .badge-battery   { background: #fefce8; color: #713f12; }
-    .badge-ac        { background: #f0fdf4; color: #166534; }
-    .badge-exhaust   { background: #f5f5f4; color: #44403c; }
-    .badge-wipers    { background: #eff6ff; color: #1e40af; }
-    .badge-wiper     { background: #eff6ff; color: #1e40af; }
-    .badge-inspection{ background: #fdf4ff; color: #7e22ce; }
-
-    .task-meta {
-      display: flex;
-      gap: 20px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .meta-item { display: flex; flex-direction: column; }
-    .meta-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; font-weight: 600; }
-    .meta-value { font-size: .88rem; color: #334155; font-weight: 500; }
-    .meta-value.highlight-red    { color: #dc2626; font-weight: 700; }
-    .meta-value.highlight-amber  { color: #d97706; font-weight: 700; }
-    .meta-value.highlight-green  { color: #16a34a; font-weight: 700; }
-
-    .task-notes { margin-top: 8px; font-size: .82rem; font-style: italic; color: #64748b; }
-
-    /* inline mark-done form */
-    .mark-done-form-wrapper { margin-top: 12px; }
-    .mark-done-form {
-      display: none;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 14px;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .mark-done-form.open { display: flex; }
-
-    /* empty state */
-    .empty-section {
-      color: #94a3b8;
-      font-size: .9rem;
-      padding: 12px 0;
-      font-style: italic;
-    }
-
-    /* ── Error banner ────────────────────────────────────────── */
-    #error-banner {
-      display: none;
-      background: #fee2e2;
-      border: 1px solid #fca5a5;
-      color: #991b1b;
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      font-size: .9rem;
-    }
-    #error-banner.show { display: block; }
-  </style>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 
@@ -348,6 +26,20 @@
 
 <!-- ── Main ────────────────────────────────────────────────────── -->
 <main>
+
+  <!-- Getting started (shown on first visit only) -->
+  <div id="getting-started">
+    <h3>Getting Started</h3>
+    <ol>
+      <li><strong>Update your odometer</strong> — click "Update Odometer" and enter your current km reading. Do this each time you fill up or visit the mechanic.</li>
+      <li><strong>Check your tasks</strong> — tasks are colour-coded: <span style="color:#dc2626;font-weight:600;">red</span> means overdue or never done, <span style="color:#d97706;font-weight:600;">amber</span> means due soon, <span style="color:#16a34a;font-weight:600;">green</span> means you're all good.</li>
+      <li><strong>Mark tasks done</strong> — after any service, click "Mark as Done", enter the km and date, and it will be saved to your maintenance log automatically.</li>
+    </ol>
+    <div class="gs-footer">
+      <span class="gs-tip">This panel will not appear again once dismissed.</span>
+      <button class="btn btn-ghost btn-sm" onclick="dismissGettingStarted()">Got it, dismiss</button>
+    </div>
+  </div>
 
   <!-- Error banner -->
   <div id="error-banner"></div>
@@ -395,6 +87,19 @@
         </form>
       </div>
     </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overdue" onclick="switchTab('overdue')">
+      Overdue / Never Done <span class="tab-badge" id="badge-overdue">0</span>
+    </button>
+    <button class="tab-btn" data-tab="due_soon" onclick="switchTab('due_soon')">
+      Due Soon <span class="tab-badge" id="badge-due_soon">0</span>
+    </button>
+    <button class="tab-btn" data-tab="ok" onclick="switchTab('ok')">
+      All Good <span class="tab-badge" id="badge-ok">0</span>
+    </button>
   </div>
 
   <!-- Task list -->
@@ -631,31 +336,65 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
+     Tab state
+  ───────────────────────────────────────────────────────────── */
+  let _allTasks   = [];
+  let _activeTab  = 'overdue';
+
+  function tabGroup(task) {
+    if (task.status === 'overdue' || task.status === 'never_done') return 'overdue';
+    if (task.status === 'due_soon') return 'due_soon';
+    return 'ok';
+  }
+
+  function switchTab(tab) {
+    _activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    renderTabContent(_allTasks, _currentKm);
+  }
+
+  function renderTabContent(tasks, currentKm) {
+    const filtered = tasks.filter(t => tabGroup(t) === _activeTab);
+    const sorted   = [...filtered].sort((a, b) => {
+      if (a.km_remaining == null && b.km_remaining == null) return 0;
+      if (a.km_remaining == null) return 1;
+      if (b.km_remaining == null) return -1;
+      return a.km_remaining - b.km_remaining;
+    });
+
+    const empty = {
+      overdue:  'No overdue or never-done tasks — great work!',
+      due_soon: 'Nothing coming due soon.',
+      ok:       'No tasks in this category yet.',
+    };
+
+    const html = sorted.length
+      ? sorted.map(t => buildTaskCard(t, currentKm)).join('')
+      : `<p class="empty-section">${empty[_activeTab]}</p>`;
+
+    $('tasks-container').innerHTML = `<div class="task-list">${html}</div>`;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
      Render task list
   ───────────────────────────────────────────────────────────── */
   function renderTasks(tasks, currentKm) {
-    const overdue  = tasks.filter(t => t.status === 'overdue' || t.status === 'never_done');
-    const dueSoon  = tasks.filter(t => t.status === 'due_soon');
-    const ok       = tasks.filter(t => t.status === 'ok');
+    _allTasks = tasks;
 
-    function section(emoji, label, items) {
-      const cards = items.length
-        ? items.map(t => buildTaskCard(t, currentKm)).join('')
-        : `<p class="empty-section">No tasks in this category.</p>`;
-      return `
-        <div class="section-header">
-          <span>${emoji}</span>
-          <h2>${label}</h2>
-          <span class="section-count">${items.length}</span>
-        </div>
-        <div class="task-list">${cards}</div>
-      `;
-    }
+    // Update tab badges
+    const counts = { overdue: 0, due_soon: 0, ok: 0 };
+    tasks.forEach(t => counts[tabGroup(t)]++);
+    Object.entries(counts).forEach(([key, n]) => {
+      const el = $(`badge-${key}`);
+      if (el) el.textContent = n;
+    });
 
-    $('tasks-container').innerHTML =
-      section('🔴', 'Overdue', overdue) +
-      section('🟡', 'Due Soon', dueSoon) +
-      section('🟢', 'Up to Date', ok);
+    // Auto-select the first non-empty tab
+    const priority = ['overdue', 'due_soon', 'ok'];
+    const firstNonEmpty = priority.find(tab => counts[tab] > 0) ?? 'overdue';
+    switchTab(firstNonEmpty);
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -766,9 +505,22 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
+     Getting started banner
+  ───────────────────────────────────────────────────────────── */
+  function dismissGettingStarted() {
+    localStorage.setItem('gs_dismissed', '1');
+    $('getting-started').style.display = 'none';
+  }
+
+  /* ─────────────────────────────────────────────────────────────
      Init
   ───────────────────────────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', () => {
+    // Hide getting-started banner if previously dismissed
+    if (localStorage.getItem('gs_dismissed')) {
+      $('getting-started').style.display = 'none';
+    }
+
     // Set today as default date on odometer form
     $('odo-date').value = TODAY;
     loadAll();
