@@ -268,13 +268,17 @@
           <div class="task-name-wrap">
             <span class="task-name">${escapeHtml(task.name)}</span>
             ${categoryBadge(task.category)}
+            <button class="collapse-btn" id="collapse-btn-${safeId}"
+                    onclick="toggleTaskDetail('${safeId}')" title="Show details">▾</button>
           </div>
           <div class="task-interval">
             ${task.interval_km ? `Every ${fmtKm(task.interval_km)} km` : ''}${task.interval_km && task.interval_months ? ' &nbsp;·&nbsp; ' : ''}${task.interval_months ? `Every ${task.interval_months} months` : ''}
           </div>
-          ${task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : ''}
-          <button class="btn btn-primary btn-sm mark-done-btn"
-                  onclick="toggleMarkDone('${safeId}')">Mark as Done</button>
+          <div class="task-detail" id="task-detail-${safeId}">
+            ${task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : ''}
+            <button class="btn btn-primary btn-sm mark-done-btn"
+                    onclick="toggleMarkDone('${safeId}')">Mark as Done</button>
+          </div>
         </td>
         <td class="col-bucket col-urgent">${cells[0]}</td>
         <td class="col-bucket col-medium">${cells[1]}</td>
@@ -335,6 +339,20 @@
         <tbody>${rows}</tbody>
       </table>
     `;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Toggle task detail panel (notes + mark-done button)
+  ───────────────────────────────────────────────────────────── */
+  function toggleTaskDetail(taskId) {
+    const detail = document.getElementById(`task-detail-${taskId}`);
+    const btn    = document.getElementById(`collapse-btn-${taskId}`);
+    if (!detail) return;
+    const opening = !detail.classList.contains('open');
+    detail.classList.toggle('open', opening);
+    btn.classList.toggle('open', opening);
+    // Close the mark-done form if collapsing
+    if (!opening) toggleMarkDone(taskId, true);
   }
 
   /* ─────────────────────────────────────────────────────────────
