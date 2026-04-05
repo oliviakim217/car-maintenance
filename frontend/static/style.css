@@ -250,8 +250,8 @@ input:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 
 }
 .badge-engine    { background: #dbeafe; color: #1d4ed8; }
 .badge-oil       { background: #dbeafe; color: #1d4ed8; }
-.badge-tyres     { background: #fce7f3; color: #be185d; }
-.badge-tyre      { background: #fce7f3; color: #be185d; }
+.badge-tires     { background: #fce7f3; color: #be185d; }
+.badge-tire      { background: #fce7f3; color: #be185d; }
 .badge-brakes    { background: #fee2e2; color: #b91c1c; }
 .badge-brake     { background: #fee2e2; color: #b91c1c; }
 .badge-fluids    { background: #d1fae5; color: #065f46; }
@@ -401,6 +401,13 @@ input:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 4px;
+}
+
+.task-interval {
+  font-size: .78rem;
+  color: #94a3b8;
+  margin-top: 3px;
+  margin-bottom: 2px;
 }
 
 .mark-done-btn { margin-top: 10px; }
