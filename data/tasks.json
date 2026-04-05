@@ -152,7 +152,7 @@
       "category": "tires",
       "interval_km": 8000,
       "interval_months": null,
-      "notes": "Rotate every 8,000 km (5,000 miles). After rotation, inflate all tires to specification and check lug nut torque. Do not rotate unidirectional or asymmetric-tread tires side-to-side.",
+      "notes": "Rotate every 8,000 km. After rotation, inflate all tires to specification and check lug nut torque. Do not rotate unidirectional or asymmetric-tread tires side-to-side. Performed at each seasonal tire changeover.",
       "last_done_km": null,
       "last_done_date": null
     },
@@ -162,9 +162,19 @@
       "category": "tires",
       "interval_km": 8000,
       "interval_months": 6,
-      "notes": "Inspect and adjust tire inflation pressure; inspect for uneven wear or damage. Also inspect spare tire if equipped. Check at least monthly per owner maintenance guidance.",
+      "notes": "Inspect and adjust tire inflation pressure; inspect for uneven wear or damage. Also inspect spare tire if equipped. Performed at each seasonal tire changeover.",
       "last_done_km": null,
       "last_done_date": null
+    },
+    {
+      "id": "tire_changeover",
+      "name": "Seasonal Tire Changeover",
+      "category": "tires",
+      "interval_km": null,
+      "interval_months": 6,
+      "notes": "Swap between winter and summer tires twice a year: winter tires on in November, summer tires on in April. Tire rotation and inflation check are performed at each changeover.",
+      "last_done_km": null,
+      "last_done_date": "2025-11-01"
     },
     {
       "id": "steering_operation_linkages",
