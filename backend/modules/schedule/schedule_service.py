@@ -1,66 +1,20 @@
 """Schedule service module.
 
-Handles loading, saving, and computing the status of maintenance tasks.
+Handles loading tasks from Airtable, computing maintenance status, and
+recording task completions.
 """
 
-import json
 import logging
 import time
 from datetime import date
-from pathlib import Path
 from typing import Dict, List, Optional
 
 from dateutil.relativedelta import relativedelta
 
 from backend.modules.schedule.models import TaskResult, TaskStatus
+from backend.services.airtable_service import get_all_task_dicts, get_task_dict, update_task_done
 
 logger = logging.getLogger(__name__)
-
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
-_TASKS_FILE = _PROJECT_ROOT / "data" / "tasks.json"
-
-
-# ---------------------------------------------------------------------------
-# File I/O helpers
-# ---------------------------------------------------------------------------
-
-
-def load_tasks() -> List[Dict]:
-    """Read data/tasks.json and return the list of task dicts.
-
-    Returns:
-        List of raw task dicts as stored in tasks.json.
-
-    Raises:
-        FileNotFoundError: If tasks.json does not exist.
-        json.JSONDecodeError: If the file contains invalid JSON.
-    """
-    with open(_TASKS_FILE, "r", encoding="utf-8") as fh:
-        data = json.load(fh)
-    return data.get("tasks", [])
-
-
-def _load_full_data() -> Dict:
-    """Read the full tasks.json structure including the vehicle key."""
-    with open(_TASKS_FILE, "r", encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def save_tasks(tasks: List[Dict]) -> None:
-    """Persist the task list back to data/tasks.json.
-
-    Preserves the top-level 'vehicle' object.
-
-    Args:
-        tasks: The full list of task dicts to write.
-
-    Raises:
-        IOError: If the file cannot be written.
-    """
-    data = _load_full_data()
-    data["tasks"] = tasks
-    with open(_TASKS_FILE, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2)
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +43,7 @@ def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> Task
     then classifies the task as never_done, overdue, due_soon, or ok.
 
     Args:
-        task: Raw task dict from tasks.json.
+        task: Task dict with fields matching the Airtable Tasks table schema.
         current_km: Current estimated odometer reading in km.
         current_date: Today's date.
         cfg: AppConfig instance (for due-soon buffer values).
@@ -161,7 +115,7 @@ def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> Task
 
 
 def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
-    """Load all tasks and compute their status against the current odometer/date.
+    """Load all tasks from Airtable and compute their status.
 
     Args:
         current_km: Current estimated odometer reading in km.
@@ -174,7 +128,7 @@ def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
     start_ms = time.monotonic()
     logger.info(f"BEGIN:get_all_tasks current_km={current_km} current_date={current_date}")
     try:
-        tasks = load_tasks()
+        tasks = get_all_task_dicts(cfg.airtable.tasks_table)
         results = [compute_status(t, current_km, current_date, cfg) for t in tasks]
         logger.info(
             f"END:get_all_tasks count={len(results)} "
@@ -187,45 +141,57 @@ def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
             f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
         )
         raise
-    finally:
-        pass
 
 
-def mark_task_done(task_id: str, done_km: int, done_date: date) -> None:
-    """Update a task's last_done_km and last_done_date fields in tasks.json.
+def mark_task_done(table_name: str, task_id: str, done_km: int, done_date: date) -> None:
+    """Update a task's last_done_km and last_done_date fields in Airtable.
 
     Args:
-        task_id: The 'id' field of the task to update.
+        table_name: Airtable table name for tasks.
+        task_id: The task_id field value of the task to update.
         done_km: Odometer reading when the task was completed.
         done_date: Calendar date when the task was completed.
 
     Raises:
-        ValueError: If no task with the given id is found.
-        IOError: If tasks.json cannot be read or written.
+        ValueError: If no task with the given task_id is found.
+        Exception: If the Airtable write fails.
     """
     start_ms = time.monotonic()
     logger.info(f"BEGIN:mark_task_done task_id={task_id} done_km={done_km} done_date={done_date}")
     try:
-        tasks = load_tasks()
-        for task in tasks:
-            if task["id"] == task_id:
-                task["last_done_km"] = done_km
-                task["last_done_date"] = done_date.isoformat()
-                save_tasks(tasks)
-                logger.info(
-                    f"END:mark_task_done task_id={task_id} "
-                    f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
-                )
-                return
-
-        raise ValueError(f"Task not found: {task_id}")
+        update_task_done(table_name, task_id, done_km, done_date)
+        logger.info(
+            f"END:mark_task_done task_id={task_id} "
+            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+        )
     except Exception as exc:
         logger.error(
             f"ERROR:mark_task_done task_id={task_id} error={exc} "
             f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
         )
         raise
-    finally:
-        pass
 
 
+def get_one_task_result(
+    table_name: str,
+    task_id: str,
+    current_km: int,
+    current_date: date,
+    cfg,
+) -> Optional[TaskResult]:
+    """Fetch a single task from Airtable and compute its status.
+
+    Args:
+        table_name: Airtable table name for tasks.
+        task_id: The task_id field value.
+        current_km: Current estimated odometer reading in km.
+        current_date: Today's date.
+        cfg: AppConfig instance.
+
+    Returns:
+        TaskResult if found, or None if no matching task exists.
+    """
+    task = get_task_dict(table_name, task_id)
+    if task is None:
+        return None
+    return compute_status(task, current_km, current_date, cfg)

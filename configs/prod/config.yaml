@@ -1,4 +1,4 @@
-version: 1
+version: 2
 
 vehicle:
   year: 2021
@@ -13,8 +13,10 @@ mileage:
   due_soon_buffer_km: 1000
   due_soon_buffer_days: 14
 
-excel:
-  log_file: "data/maintenance_log.xlsx"
+airtable:
+  tasks_table: Tasks
+  mileage_table: Mileage
+  maintenance_log_table: "Maintenance Log"
 
 logging:
   level: WARNING
