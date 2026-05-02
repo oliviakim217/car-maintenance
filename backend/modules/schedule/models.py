@@ -27,11 +27,11 @@ class TaskResult(BaseModel):
     id: str
     name: str
     category: str
-    interval_km: Optional[int]
-    interval_months: Optional[int]
-    notes: str
-    last_done_km: Optional[int]
-    last_done_date: Optional[str]
+    interval_km: Optional[int] = None
+    interval_months: Optional[int] = None
+    notes: str = ""
+    last_done_km: Optional[int] = None
+    last_done_date: Optional[str] = None
 
     # Computed fields
     status: TaskStatus

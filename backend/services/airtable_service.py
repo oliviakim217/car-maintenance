@@ -218,7 +218,7 @@ def get_last_mileage_entry(table_name: str) -> Dict:
     logger.info(f"BEGIN:get_last_mileage_entry table={table_name}")
     try:
         table = _get_table(table_name)
-        record = table.first(sort=[{"field": "date", "direction": "desc"}])
+        record = table.first(sort=["-date"])
         if record is None:
             raise ValueError("No mileage entries found in Airtable")
         entry = record["fields"]

@@ -101,6 +101,7 @@ def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> Task
 
     return TaskResult(
         **task,
+        id=task["task_id"],
         status=status,
         next_due_km=next_due_km,
         next_due_date=next_due_date,
