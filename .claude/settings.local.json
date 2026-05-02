@@ -5,7 +5,15 @@
       "Bash(mv \"C:\\\\Users\\\\Olivia\\\\Documents\\\\IT\\\\19-Car-Maintenance\\\\python-rules.md\" \"C:\\\\Users\\\\Olivia\\\\Documents\\\\IT\\\\19-Car-Maintenance\\\\.claude/python-rules.md\")",
       "Bash(pip install:*)",
       "Bash(py:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(pip list:*)",
+      "Bash(python:*)",
+      "Bash(venv/Scripts/pip show *)",
+      "Bash(pip show *)",
+      "Bash(python3 *)",
+      "Bash(awk { if \\(length > 100\\) print FILENAME\":\"NR\": length=\"length } *)",
+      "Bash(xargs grep *)",
+      "Bash(claude doctor *)"
     ]
   }
 }
