@@ -17,7 +17,7 @@
 </header>
 
 <!-- ── Spinner overlay ─────────────────────────────────────────── -->
-<div id="spinner-overlay">
+<div id="spinner-overlay" role="status" aria-label="Loading…">
   <div class="spinner"></div>
 </div>
 
@@ -32,7 +32,7 @@
     <h3>Getting Started</h3>
     <ol>
       <li><strong>Update your odometer</strong> — click "Update Odometer" and enter your current km reading. Do this each time you fill up or visit the mechanic.</li>
-      <li><strong>Check your tasks</strong> — tasks are colour-coded: <span style="color:#dc2626;font-weight:600;">red</span> means overdue or never done, <span style="color:#d97706;font-weight:600;">amber</span> means due soon, <span style="color:#16a34a;font-weight:600;">green</span> means you're all good.</li>
+      <li><strong>Check your tasks</strong> — tasks are colour-coded: <span class="status-color-red">red</span> means overdue or never done, <span class="status-color-amber">amber</span> means due soon, <span class="status-color-green">green</span> means you're all good.</li>
       <li><strong>Mark tasks done</strong> — after any service, click "Mark as Done", enter the km and date, and it will be saved to your maintenance log automatically.</li>
     </ol>
     <div class="gs-footer">
@@ -42,7 +42,7 @@
   </div>
 
   <!-- Error banner -->
-  <div id="error-banner"></div>
+  <div id="error-banner" role="alert"></div>
 
   <!-- Mileage section -->
   <div id="mileage-section">
@@ -58,7 +58,7 @@
           <span class="stat-secondary" id="stat-last-date" style="margin-top:2px;font-size:.82rem;color:#64748b;"></span>
         </div>
         <div class="stat-block">
-          <span class="stat-label">Est. Added Since Reading</span>
+          <span class="stat-label">Est. Added</span>
           <span class="stat-value" id="stat-estimated-km">—<span class="unit">km</span></span>
         </div>
       </div>
@@ -328,12 +328,13 @@
 
     $('tasks-container').innerHTML = `
       <table class="task-table">
+        <caption class="table-caption">Maintenance schedule — checkmark shows when each item is due</caption>
         <thead>
           <tr>
             <th class="col-task">Type of Work</th>
-            <th class="col-bucket col-urgent">Less than 3 months</th>
+            <th class="col-bucket col-urgent">&lt; 3 months</th>
             <th class="col-bucket col-medium">3–6 months</th>
-            <th class="col-bucket col-later">More than 6 months</th>
+            <th class="col-bucket col-later">&gt; 6 months</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
