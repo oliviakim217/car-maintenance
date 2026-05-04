@@ -42,7 +42,7 @@ Your terminal prompt should now show `(venv)` at the start. Keep this active whe
 pip install -r requirements.txt
 ```
 
-This installs FastAPI, openpyxl, python-dotenv, and all other required packages.
+This installs FastAPI, pyairtable, python-dotenv, and all other required packages.
 
 ---
 
@@ -56,12 +56,17 @@ copy .env.example .env
 
 (On Mac/Linux: `cp .env.example .env`)
 
-The defaults are fine as-is — no changes needed to get started:
+Fill in your Airtable credentials:
 
 ```
 APP_ENV=dev
 APP_LOG_LEVEL=INFO
+AIRTABLE_TOKEN=your_airtable_personal_access_token_here
+AIRTABLE_BASE_ID_DEV=appXXXXXXXXXXXXXX
+AIRTABLE_BASE_ID_PROD=appXXXXXXXXXXXXXX
 ```
+
+Your Airtable token can be found at airtable.com → Account → Developer Hub → Personal access tokens.
 
 ---
 
@@ -85,10 +90,10 @@ You should see the Car Maintenance dashboard.
 
 ## 6. First Use
 
-- Your current mileage (40,000 km) is pre-loaded as the starting reading
-- All 25 maintenance tasks from your Mazda 3 owner's manual are loaded and ready
+- Your current mileage is tracked via Airtable — add an initial reading via the dashboard
+- All maintenance tasks are stored in Airtable and ready to use
 - Tasks will show as **Never Done** until you mark them complete for the first time
-- Each time you mark a task done, it is automatically logged to `data/maintenance_log.xlsx` — the file is created on first use
+- Each time you mark a task done, it is automatically logged to the Airtable Maintenance Log table
 
 ---
 
@@ -97,5 +102,5 @@ You should see the Car Maintenance dashboard.
 **"Module not found" error when starting**
 You are probably running Python outside the virtual environment. Run `venv\Scripts\activate` first, then try again.
 
-**Excel log not appearing**
-The file `data/maintenance_log.xlsx` is created automatically the first time you mark a task as done. If it doesn't appear, check that the `data/` folder exists and that you have write permissions to the project folder.
+**Airtable errors on startup**
+Check that your `.env` file has a valid `AIRTABLE_TOKEN` and `AIRTABLE_BASE_ID_DEV`. Tokens are found at airtable.com → Account → Developer Hub.

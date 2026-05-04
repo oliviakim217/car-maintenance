@@ -1,7 +1,5 @@
 # Rules — Car Maintenance Project
 
-@.claude/python-rules.md
-
 ## Progressive Disclosure
 
 Task- and topic-specific instructions live in `.claude/` as separate files. Before starting work,
@@ -11,6 +9,8 @@ relevant.
 | File | When to read |
 |------|--------------|
 | `.claude/python-rules.md` | Any time you write or modify Python code |
+| `.claude/naming-rules.md` | Any time you write or modify Python code |
+| `.claude/scalability-rules.md` | Any time you add a new feature, module, route, or service |
 
 ## General
 
@@ -60,26 +60,26 @@ relevant.
 ## Validation Pipeline (non-negotiable order)
 
 ```
-Receive Input → Pydantic Validation → SQL Injection Check → Business Validation →
+Receive Input → Pydantic Validation → Input Sanitization → Business Validation →
 Transform → Enrich → Call External API → Build Response
 ```
 
 Never skip or reorder these stages.
 
-## SQL Injection Prevention
+## Input Sanitization
 
-1. **Never** interpolate user input directly into SQL strings.
-2. Always use parameterized queries / prepared statements:
-   ```python
-   # Correct
-   cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+This project uses Airtable (a REST API) — there is no SQL database. Sanitization focuses on
+preventing malformed or malicious data from reaching the Airtable API or business logic.
 
-   # Wrong
-   cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
-   ```
-3. Reject any input containing SQL meta-characters (`'`, `"`, `;`, `--`, `/*`, `*/`, `xp_`, `UNION`, `DROP`, etc.) before it reaches the query layer.
-4. Use an allowlist for dynamic identifiers (table/column names) — never build them from raw input.
-5. Apply this check in the **Validation Pipeline** immediately after Pydantic validation, before any business logic.
+1. Reject unexpected types, empty strings where values are required, and out-of-range numbers
+   before they reach the service layer.
+2. Allowlist field names used to build Airtable filter formulas — never construct formula strings
+   from raw user input.
+3. Strip and normalize string inputs (trim whitespace, enforce max length) at the Pydantic layer
+   using `@field_validator` or `Field(max_length=...)`.
+4. Never forward raw request data to the Airtable API. Always pass validated, typed values.
+5. Apply these checks in the **Validation Pipeline** immediately after Pydantic validation,
+   before any business logic.
 
 ## Config Files
 
@@ -91,6 +91,21 @@ Never skip or reorder these stages.
 5. Environment is selected by `APP_ENV` env var — never hardcoded.
 6. Business rules, field mappings, dropdown values → YAML config.
 7. Credentials, secrets, URLs → `.env` file only. Never in YAML.
+
+## Config File Frontmatter
+
+1. Every config file must begin with a frontmatter block describing the file itself:
+   ```yaml
+   ---
+   description: "Dev environment config for xxx"
+   environment: "dev"
+   version: "1.0.0"
+   last_updated: "2026-03-31"
+   ---
+   ```
+2. The frontmatter is metadata about the file — not application config. Keep it separate from the actual config values below it.
+3. Required frontmatter fields: `description`, `environment`, `version`, `last_updated`.
+4. Do not omit frontmatter, even in dev configs.
 
 ## Version Control
 
@@ -107,7 +122,7 @@ Never skip or reorder these stages.
 1. Test data goes in `tests/test_data/`. Use realistic but fake data.
 2. Always test: happy path, missing fields, invalid formats, API failure/timeout, edge cases.
 3. Code must be testable without modifying `backend/main.py`.
-4. Use dependency injection so external clients (Excel) can be mocked.
+4. Use dependency injection so external clients (Airtable) can be mocked.
 
 ## Project Structure
 
@@ -118,12 +133,11 @@ project-root/
 │   ├── modules/         # One sub-folder per feature/domain (e.g. auth/, billing/)
 │   ├── routes/          # Route/endpoint definitions only — no business logic here
 │   ├── services/        # Cross-cutting services (email, storage, external APIs)
-│   └── utils/           # Shared helpers with no business logic
+│   ├── utils/           # Shared helpers with no business logic
+│   └── main.py          # Entry point — wiring only, no business logic
 ├── configs/
 │   ├── dev/             # YAML config files for dev environment
 │   └── prod/            # YAML config files for prod environment
-├── backend/
-│   └── main.py          # Entry point — wiring only, no business logic
 ├── tests/
 │   └── test_data/
 └── .env                 # Secrets and credentials only — never commit

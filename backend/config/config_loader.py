@@ -39,10 +39,12 @@ class MileageConfig(BaseModel):
     due_soon_buffer_days: int
 
 
-class ExcelConfig(BaseModel):
-    """Excel log file settings."""
+class AirtableConfig(BaseModel):
+    """Airtable table name settings."""
 
-    log_file: str
+    tasks_table: str
+    mileage_table: str
+    maintenance_log_table: str
 
 
 class LoggingConfig(BaseModel):
@@ -58,7 +60,7 @@ class AppConfig(BaseModel):
     version: int
     vehicle: VehicleConfig
     mileage: MileageConfig
-    excel: ExcelConfig
+    airtable: AirtableConfig
     logging: LoggingConfig
 
 
@@ -94,7 +96,8 @@ def get_config() -> AppConfig:
 
     try:
         with open(config_path, "r", encoding="utf-8") as fh:
-            raw = yaml.safe_load(fh)
+            documents = list(yaml.safe_load_all(fh))
+            raw = documents[-1]
         config = AppConfig(**raw)
         logger.info(f"END:load_config env={app_env} duration_ms=0")
         return config

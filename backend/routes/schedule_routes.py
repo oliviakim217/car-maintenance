@@ -15,12 +15,11 @@ from backend.config.config_loader import get_config
 from backend.modules.mileage.mileage_service import get_current_km
 from backend.modules.schedule.models import TaskResult
 from backend.modules.schedule.schedule_service import (
-    compute_status,
     get_all_tasks,
-    load_tasks,
+    get_one_task_result,
     mark_task_done,
 )
-from backend.services.excel_service import log_completed_task
+from backend.services.airtable_service import append_maintenance_log
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +65,11 @@ async def get_schedule() -> List[TaskResult]:
 async def complete_task(task_id: str, body: CompleteTaskBody) -> TaskResult:
     """Mark a maintenance task as completed.
 
-    Updates last_done fields in tasks.json, logs to Excel, and
-    returns the updated TaskResult with recomputed status.
+    Updates last_done fields in Airtable, appends a record to the
+    Maintenance Log table, and returns the updated TaskResult.
 
     Args:
-        task_id: The unique task identifier.
+        task_id: The unique task identifier (task_id field value).
         body: JSON body with done_km, done_date (ISO string), and notes.
     """
     try:
@@ -80,40 +79,42 @@ async def complete_task(task_id: str, body: CompleteTaskBody) -> TaskResult:
 
     try:
         cfg = get_config()
-        mark_task_done(task_id, body.done_km, done_date)
+        mark_task_done(cfg.airtable.tasks_table, task_id, body.done_km, done_date)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
         logger.error(f"ERROR:complete_task task_id={task_id} error={exc}")
         raise HTTPException(status_code=500, detail="Failed to mark task as done")
 
-    # Log to Excel (non-critical — failures are swallowed in the service)
+    # Append to Maintenance Log (non-critical — failures are swallowed here)
     try:
-        tasks = load_tasks()
-        task_dict = next((t for t in tasks if t["id"] == task_id), None)
-        task_name = task_dict["name"] if task_dict else task_id
-        log_completed_task(
+        cfg = get_config()
+        result_before_log = get_one_task_result(
+            cfg.airtable.tasks_table, task_id, body.done_km, done_date, cfg
+        )
+        task_name = result_before_log.name if result_before_log else task_id
+        append_maintenance_log(
+            table_name=cfg.airtable.maintenance_log_table,
             task_name=task_name,
             done_km=body.done_km,
             done_date=done_date,
             notes=body.notes,
-            log_file=cfg.excel.log_file,
         )
     except Exception as exc:
-        logger.error(f"ERROR:complete_task excel_log error={exc}")
+        logger.error(f"ERROR:complete_task maintenance_log error={exc}")
 
     # Return updated task with recomputed status
     try:
-        tasks = load_tasks()
-        task_dict = next((t for t in tasks if t["id"] == task_id), None)
-        if task_dict is None:
-            raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+        cfg = get_config()
         current_km = get_current_km()
-        return compute_status(task_dict, current_km, date.today(), cfg)
+        result = get_one_task_result(
+            cfg.airtable.tasks_table, task_id, current_km, date.today(), cfg
+        )
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+        return result
     except HTTPException:
         raise
     except Exception as exc:
         logger.error(f"ERROR:complete_task recompute error={exc}")
         raise HTTPException(status_code=500, detail="Task updated but failed to return result")
-
-

@@ -12,7 +12,7 @@
    import os
    import time
    from dataclasses import dataclass
-   from typing import Optional
+   from datetime import date
 
    # 2. Third-party
    import httpx
@@ -21,15 +21,21 @@
    from pydantic import BaseModel
 
    # 3. Local
-   from backend.config.config_loader import load_config
-   from backend.modules.jira.client import JiraClient
+   from backend.config.config_loader import get_config
+   from backend.services.airtable_service import get_last_mileage_entry
 ```
 
 ## Type Hints
 
 1. Required on all function parameters and return values.
-2. Use `Optional[str]` for optional fields.
-3. Use `from typing import Optional, List, Dict, Union` for complex types.
+2. This project runs Python 3.12. Use built-in generic types and `|` union syntax — do NOT import
+   deprecated aliases from `typing`:
+   - `str | None` instead of `Optional[str]`
+   - `list[str]` instead of `List[str]`
+   - `dict[str, int]` instead of `Dict[str, int]`
+   - `str | int` instead of `Union[str, int]`
+3. Only import from `typing` for constructs not available as builtins: `TypeVar`, `Protocol`,
+   `overload`, `TYPE_CHECKING`, `Annotated`, `Literal`.
 
 ## Docstrings
 
@@ -37,19 +43,21 @@
 2. Default to one-line docstrings: `"""Validate the 8-digit staff ID format."""`
 3. Use multi-line only for complex functions that need explanation:
 ```python
-   def submit_story_request(story_input: CreateStoryInput, cfg: BssConfig) -> CreateStoryResponse:
+   def compute_status(task: dict, current_km: int, current_date: date, cfg: AppConfig) -> TaskResult:
        """
-       Orchestrate the full story creation pipeline.
+       Compute scheduling status for a single maintenance task.
 
        Args:
-           story_input: Validated form input from the user.
+           task: Task dict with fields from the Airtable Tasks table.
+           current_km: Current estimated odometer reading in km.
+           current_date: Today's date.
            cfg: Loaded application config.
 
        Returns:
-           CreateStoryResponse with jira_issue_key and URL on success.
+           TaskResult with status, next due km/date, and remaining km/days.
 
        Raises:
-           JiraClientError: If the Jira API call fails after retries.
+           ValueError: If required task fields are missing or malformed.
        """
 ```
 
@@ -59,14 +67,13 @@
 2. Keep functions under 50 lines. Split if longer.
 3. Use early returns to reduce nesting:
 ```python
-   def _validate_staff_id(staff_id_raw: str) -> ValidationResult:
-       if not staff_id_raw:
-           return ValidationResult(is_valid=False, error_code="MISSING_STAFF_ID")
-       if not staff_id_raw.isdigit():
-           return ValidationResult(is_valid=False, error_code="STAFF_ID_NOT_NUMERIC")
-       if len(staff_id_raw) != STAFF_ID_LENGTH:
-           return ValidationResult(is_valid=False, error_code="INVALID_STAFF_ID_LENGTH")
-       return ValidationResult(is_valid=True)
+   def add_manual_reading(km: int, reading_date: date) -> None:
+       if km <= 0:
+           raise ValueError(f"km must be a positive integer, got {km}")
+       if reading_date > date.today():
+           raise ValueError(f"reading_date cannot be in the future: {reading_date}")
+       cfg = get_config()
+       add_mileage_entry(cfg.airtable.mileage_table, km, reading_date)
 ```
 
 ## Code Structure
@@ -91,15 +98,15 @@
 1. Catch specific exceptions first, then `Exception`:
 ```python
    try:
-       jira_result = await jira_client.create_issue(bss_story_payload)
+       record = table.first(sort=["-date"])
    except httpx.TimeoutException:
-       logger.error("ERROR:create_issue error=timeout")
+       logger.error("ERROR:get_last_mileage_entry error=timeout")
        raise
    except httpx.HTTPStatusError as exc:
-       logger.error(f"ERROR:create_issue error=http_status http_status_code={exc.response.status_code}")
+       logger.error(f"ERROR:get_last_mileage_entry error=http_status status={exc.response.status_code}")
        raise
    except Exception as exc:
-       logger.error(f"ERROR:create_issue error={exc}", exc_info=True)
+       logger.error(f"ERROR:get_last_mileage_entry error={exc}", exc_info=True)
        raise
 ```
 2. Never use bare `except:`.
@@ -135,7 +142,7 @@
 
 ## String Formatting
 
-1. Always use f-strings: `f"Created issue {jira_issue_key} in {duration_ms}ms"`
+1. Always use f-strings: `f"task={task_id} status={status} km_remaining={km_remaining}"`
 2. Never use `%` formatting or `.format()`.
 
 ## Performance
