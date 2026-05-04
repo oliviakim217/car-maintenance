@@ -96,7 +96,8 @@ def get_config() -> AppConfig:
 
     try:
         with open(config_path, "r", encoding="utf-8") as fh:
-            raw = yaml.safe_load(fh)
+            documents = list(yaml.safe_load_all(fh))
+            raw = documents[-1]
         config = AppConfig(**raw)
         logger.info(f"END:load_config env={app_env} duration_ms=0")
         return config
