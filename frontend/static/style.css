@@ -475,11 +475,6 @@ input:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 
 
 .task-row:last-of-type td { border-bottom: none; }
 
-.task-row.status-overdue   td:first-child,
-.task-row.status-never_done td:first-child { border-left: 4px solid #ef4444; }
-.task-row.status-due_soon  td:first-child  { border-left: 4px solid #f59e0b; }
-.task-row.status-ok        td:first-child  { border-left: 4px solid #22c55e; }
-
 .task-row:hover td { background: #f8fafc; }
 
 .task-name-wrap {
