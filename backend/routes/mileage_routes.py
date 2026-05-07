@@ -56,7 +56,8 @@ class AddMileageBody(BaseModel):
 
 
 @router.get("/api/mileage")
-async def get_mileage() -> Dict:
+@limiter.limit(lambda: f"{get_config().rate_limiting.read_requests_per_minute}/minute")
+async def get_mileage(request: Request) -> Dict:
     """Return the current estimated mileage and last manual reading.
 
     Returns:

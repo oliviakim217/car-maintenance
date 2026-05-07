@@ -15,6 +15,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Now copy the rest of the app.
 COPY . .
 
+# Run as a non-root user to limit blast radius if the app is compromised.
+RUN adduser --disabled-password --gecos "" appuser
+USER appuser
+
 # Tell Docker this container listens on port 8000.
 EXPOSE 8000
 

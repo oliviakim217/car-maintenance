@@ -62,7 +62,8 @@ class CompleteTaskBody(BaseModel):
 
 
 @router.get("/api/schedule", response_model=List[TaskResult])
-async def get_schedule() -> List[TaskResult]:
+@limiter.limit(lambda: f"{get_config().rate_limiting.read_requests_per_minute}/minute")
+async def get_schedule(request: Request) -> List[TaskResult]:
     """Return all maintenance tasks with their computed status.
 
     Current km is auto-calculated from the latest mileage entry plus

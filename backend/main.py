@@ -19,7 +19,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.responses import Response
 
 # Load .env before anything else so env vars are available during import
 load_dotenv()
@@ -90,6 +92,18 @@ _secret_key = os.getenv("SECRET_KEY")
 if not _secret_key:
     raise RuntimeError("SECRET_KEY is not set in the environment")
 
+class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response: Response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        )
+        return response
+
+
 app = FastAPI(
     title="Car Maintenance Reminder",
     description="Track and schedule maintenance for your Mazda 3.",
@@ -100,6 +114,7 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(_SecurityHeadersMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=_secret_key,

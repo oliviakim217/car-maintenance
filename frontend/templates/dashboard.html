@@ -336,7 +336,7 @@
     cells[bucket]   = buildDueCell(task);
 
     return `
-      <tr class="task-row status-${task.status}" id="task-row-${safeId}">
+      <tr class="task-row status-${escapeHtml(task.status)}" id="task-row-${safeId}">
         <td class="col-task">
           <div class="task-name-wrap">
             <span class="task-name">${escapeHtml(task.name)}</span>
