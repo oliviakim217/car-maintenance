@@ -8,12 +8,28 @@
 </head>
 <body>
 
+<!-- ── Login overlay ────────────────────────────────────────────── -->
+<div id="login-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
+  <div class="login-card">
+    <h2 id="login-title" class="login-title">Car Maintenance</h2>
+    <p class="login-sub">2021 Mazda 3</p>
+    <form id="login-form">
+      <label for="api-key-input" class="login-label">API Key</label>
+      <input type="password" id="api-key-input" class="login-input"
+             placeholder="Enter your API key" autocomplete="current-password" required />
+      <div id="login-error" class="login-error" role="alert"></div>
+      <button type="submit" class="btn btn-primary login-btn">Sign in</button>
+    </form>
+  </div>
+</div>
+
 <!-- ── Header ──────────────────────────────────────────────────── -->
 <header>
   <div class="header-left">
     <span class="header-title">Car Maintenance</span>
     <span class="header-sub">2021 Mazda 3</span>
   </div>
+  <button class="btn btn-ghost btn-sm" id="signout-btn" onclick="signOut()" style="display:none">Sign out</button>
 </header>
 
 <!-- ── Spinner overlay ─────────────────────────────────────────── -->
@@ -142,14 +158,70 @@
     $('spinner-overlay').classList.toggle('active', on);
   }
 
-  /* ── API helpers ────────────────────────────────────────────── */
-  const _API_KEY = "{{ api_key }}";
+  /* ── Auth helpers ───────────────────────────────────────────── */
+  function _getApiKey() { return sessionStorage.getItem('apiKey') || ''; }
 
+  function showLoginOverlay(errorMsg = '') {
+    $('login-overlay').classList.add('active');
+    $('signout-btn').style.display = 'none';
+    $('login-error').textContent = errorMsg;
+    $('api-key-input').value = '';
+    setTimeout(() => $('api-key-input').focus(), 50);
+  }
+
+  function hideLoginOverlay() {
+    $('login-overlay').classList.remove('active');
+    $('signout-btn').style.display = '';
+  }
+
+  function signOut() {
+    sessionStorage.removeItem('apiKey');
+    showLoginOverlay();
+  }
+
+  $('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const key = $('api-key-input').value.trim();
+    if (!key) return;
+    const btn = $('login-form').querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const res = await fetch('/api/mileage', {
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': key }
+      });
+      if (res.status === 401) {
+        $('login-error').textContent = 'Incorrect API key. Try again.';
+        $('api-key-input').value = '';
+        $('api-key-input').focus();
+        return;
+      }
+      if (!res.ok) {
+        $('login-error').textContent = 'Something went wrong. Try again.';
+        return;
+      }
+      sessionStorage.setItem('apiKey', key);
+      hideLoginOverlay();
+      loadAll();
+    } catch (_) {
+      $('login-error').textContent = 'Could not reach the server.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  });
+
+  /* ── API helpers ────────────────────────────────────────────── */
   async function apiFetch(url, options = {}) {
     const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': _API_KEY },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': _getApiKey() },
       ...options,
     });
+    if (res.status === 401) {
+      sessionStorage.removeItem('apiKey');
+      showLoginOverlay('Session expired. Please sign in again.');
+      throw new Error('Unauthorized');
+    }
     if (!res.ok) {
       let detail = `HTTP ${res.status}`;
       try { const j = await res.json(); detail = j.detail || j.message || detail; } catch (_) {}
@@ -484,7 +556,14 @@
 
     // Set today as default date on odometer form
     $('odo-date').value = TODAY;
-    loadAll();
+
+    // Show login overlay if no key is stored; otherwise load the dashboard
+    if (!_getApiKey()) {
+      showLoginOverlay();
+    } else {
+      hideLoginOverlay();
+      loadAll();
+    }
   });
 </script>
 </body>

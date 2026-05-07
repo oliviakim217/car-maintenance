@@ -118,9 +118,7 @@ async def serve_dashboard(request: Request) -> HTMLResponse:
     Returns:
         HTMLResponse rendering frontend/templates/dashboard.html.
     """
-    return templates.TemplateResponse(
-        request, "dashboard.html", {"api_key": os.getenv("APP_API_KEY", "")}
-    )
+    return templates.TemplateResponse(request, "dashboard.html")
 
 
 # ---------------------------------------------------------------------------

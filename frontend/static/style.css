@@ -1,3 +1,62 @@
+/* ── Login overlay ───────────────────────────────────────── */
+#login-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0f172a;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+#login-overlay.active { display: flex; }
+
+.login-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.login-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+.login-sub {
+  font-size: .85rem;
+  color: #64748b;
+  margin-bottom: 28px;
+}
+.login-label {
+  display: block;
+  font-size: .8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #475569;
+  margin-bottom: 6px;
+}
+.login-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: .95rem;
+  color: #1a1a2e;
+  transition: border-color .15s;
+  margin-bottom: 10px;
+}
+.login-input:focus { border-color: #3b82f6; outline: none; }
+.login-error {
+  min-height: 20px;
+  font-size: .82rem;
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+.login-btn { width: 100%; justify-content: center; }
+
 /* ── Reset & Base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
