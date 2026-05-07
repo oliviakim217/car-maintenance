@@ -11,7 +11,7 @@ The feature name is provided in ARGUMENTS below. If ARGUMENTS is empty, ask the 
 
 ### 1. Read project rules
 
-Read `.claude/scalability-rules.md` so you apply the correct conventions throughout.
+Read `.claude/rules/scalability-rules.md` so you apply the correct conventions throughout.
 
 ### 2. Confirm the plan with the user
 

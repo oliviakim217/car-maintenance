@@ -45,7 +45,7 @@ Your task is to audit the coding rules and guidelines defined in this project's 
 Present your findings clearly, organised by file. For each finding:
 
 ```
-### [File: CLAUDE.md | .claude/python-rules.md | etc.]
+### [File: CLAUDE.md | .claude/rules/python-rules.md | etc.]
 
 **[🔴/🟡/🟢/✅] Finding: <short title>**
 Section/Rule: <quote the existing rule, or "Missing" if new>
