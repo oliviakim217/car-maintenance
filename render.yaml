@@ -1,0 +1,27 @@
+services:
+  - name: car-maintenance
+    type: web
+    image:
+      url: docker.io/YOUR_DOCKERHUB_USERNAME/car-maintenance:latest  # replace with your image URL
+      registryCredential:
+        fromRegistryCreds:
+          name: dockerhub  # must match the credential name you create in Render dashboard → Registry Credentials
+    region: oregon
+    plan: starter          # change to "free" if preferred — free tier spins down after 15 min of inactivity
+    healthCheckPath: /health
+
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: APP_LOG_LEVEL
+        value: INFO
+
+      # Set these manually in the Render dashboard (Environment tab) — never committed to git
+      - key: SECRET_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      - key: AIRTABLE_TOKEN
+        sync: false
+      - key: AIRTABLE_BASE_ID_PROD
+        sync: false
