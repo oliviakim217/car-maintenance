@@ -17,6 +17,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Load .env before anything else so env vars are available during import
 load_dotenv()
@@ -39,6 +41,7 @@ logger = logging.getLogger(__name__)
 from backend.config.config_loader import get_config  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
+from backend.utils.limiter import limiter  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Templates
@@ -89,6 +92,8 @@ app = FastAPI(
     docs_url="/docs" if _app_env == "dev" else None,
     redoc_url="/redoc" if _app_env == "dev" else None,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Serve static files (CSS, JS, images)
 app.mount("/static", StaticFiles(directory=str(_PROJECT_ROOT / "frontend" / "static")), name="static")

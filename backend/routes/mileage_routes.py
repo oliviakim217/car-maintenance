@@ -9,7 +9,7 @@ import time
 from datetime import date
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.modules.mileage.mileage_service import (
@@ -18,6 +18,7 @@ from backend.modules.mileage.mileage_service import (
     get_last_reading,
 )
 from backend.utils.auth import require_api_key
+from backend.utils.limiter import limiter
 from backend.utils.date_utils import estimate_km_driven
 from backend.config.config_loader import get_config
 
@@ -92,7 +93,8 @@ async def get_mileage() -> Dict:
 
 
 @router.post("/api/mileage")
-async def post_mileage(body: AddMileageBody) -> Dict:
+@limiter.limit(lambda: f"{get_config().rate_limiting.write_requests_per_minute}/minute")
+async def post_mileage(request: Request, body: AddMileageBody) -> Dict:
     """Add a new manual odometer reading.
 
     Args:

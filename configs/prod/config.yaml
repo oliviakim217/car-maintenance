@@ -28,3 +28,7 @@ airtable:
 logging:
   level: WARNING
   retention_days: 30
+
+rate_limiting:
+  write_requests_per_minute: 10
+  read_requests_per_minute: 60

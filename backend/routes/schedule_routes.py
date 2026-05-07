@@ -10,7 +10,7 @@ import time
 from datetime import date
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.config.config_loader import get_config
@@ -23,6 +23,7 @@ from backend.modules.schedule.schedule_service import (
 )
 from backend.services.airtable_service import append_maintenance_log
 from backend.utils.auth import require_api_key
+from backend.utils.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,8 @@ async def get_schedule() -> List[TaskResult]:
 
 
 @router.post("/api/tasks/{task_id}/complete", response_model=TaskResult)
-async def complete_task(task_id: str, body: CompleteTaskBody) -> TaskResult:
+@limiter.limit(lambda: f"{get_config().rate_limiting.write_requests_per_minute}/minute")
+async def complete_task(request: Request, task_id: str, body: CompleteTaskBody) -> TaskResult:
     """Mark a maintenance task as completed.
 
     Updates last_done fields in Airtable, appends a record to the
