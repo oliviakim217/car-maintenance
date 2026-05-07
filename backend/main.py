@@ -80,11 +80,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # FastAPI app
 # ---------------------------------------------------------------------------
 
+_app_env = os.getenv("APP_ENV", "dev")
 app = FastAPI(
     title="Car Maintenance Reminder",
     description="Track and schedule maintenance for your Mazda 3.",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if _app_env == "dev" else None,
+    redoc_url="/redoc" if _app_env == "dev" else None,
 )
 
 # Serve static files (CSS, JS, images)
@@ -110,7 +113,9 @@ async def serve_dashboard(request: Request) -> HTMLResponse:
     Returns:
         HTMLResponse rendering frontend/templates/dashboard.html.
     """
-    return templates.TemplateResponse(request, "dashboard.html")
+    return templates.TemplateResponse(
+        request, "dashboard.html", {"api_key": os.getenv("APP_API_KEY", "")}
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -118,4 +123,6 @@ async def serve_dashboard(request: Request) -> HTMLResponse:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    _reload = _app_env == "dev"
+    _host = os.getenv("APP_HOST", "127.0.0.1")
+    uvicorn.run("backend.main:app", host=_host, port=8000, reload=_reload)

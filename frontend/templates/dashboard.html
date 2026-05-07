@@ -143,9 +143,11 @@
   }
 
   /* ── API helpers ────────────────────────────────────────────── */
+  const _API_KEY = "{{ api_key }}";
+
   async function apiFetch(url, options = {}) {
     const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': _API_KEY },
       ...options,
     });
     if (!res.ok) {
@@ -195,7 +197,7 @@
   ───────────────────────────────────────────────────────────── */
   function categoryBadge(cat) {
     const c = (cat || 'general').toLowerCase().replace(/[^a-z]/g, '');
-    return `<span class="badge badge-${c}">${cat || 'general'}</span>`;
+    return `<span class="badge badge-${c}">${escapeHtml(cat || 'general')}</span>`;
   }
 
   /* ─────────────────────────────────────────────────────────────
