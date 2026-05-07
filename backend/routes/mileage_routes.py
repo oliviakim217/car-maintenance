@@ -17,14 +17,14 @@ from backend.modules.mileage.mileage_service import (
     get_current_km,
     get_last_reading,
 )
-from backend.utils.auth import require_api_key
+from backend.utils.auth import require_session
 from backend.utils.limiter import limiter
 from backend.utils.date_utils import estimate_km_driven
 from backend.config.config_loader import get_config
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(dependencies=[Depends(require_api_key)])
+router = APIRouter(dependencies=[Depends(require_session)])
 
 
 # ---------------------------------------------------------------------------

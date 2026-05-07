@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.sessions import SessionMiddleware
 
 # Load .env before anything else so env vars are available during import
 load_dotenv()
@@ -39,6 +40,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 from backend.config.config_loader import get_config  # noqa: E402
+from backend.routes.auth_routes import router as auth_router  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
 from backend.utils.limiter import limiter  # noqa: E402
@@ -84,6 +86,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # ---------------------------------------------------------------------------
 
 _app_env = os.getenv("APP_ENV", "dev")
+_secret_key = os.getenv("SECRET_KEY")
+if not _secret_key:
+    raise RuntimeError("SECRET_KEY is not set in the environment")
+
 app = FastAPI(
     title="Car Maintenance Reminder",
     description="Track and schedule maintenance for your Mazda 3.",
@@ -94,11 +100,18 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=_secret_key,
+    same_site="lax",
+    https_only=_app_env == "prod",
+)
 
 # Serve static files (CSS, JS, images)
 app.mount("/static", StaticFiles(directory=str(_PROJECT_ROOT / "frontend" / "static")), name="static")
 
 # Mount routers
+app.include_router(auth_router)
 app.include_router(schedule_router)
 app.include_router(mileage_router)
 

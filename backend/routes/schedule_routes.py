@@ -22,14 +22,14 @@ from backend.modules.schedule.schedule_service import (
     mark_task_done,
 )
 from backend.services.airtable_service import append_maintenance_log
-from backend.utils.auth import require_api_key
+from backend.utils.auth import require_session
 from backend.utils.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 _TASK_ID_RE = re.compile(r"^[a-z0-9_]{1,64}$")
 
-router = APIRouter(dependencies=[Depends(require_api_key)])
+router = APIRouter(dependencies=[Depends(require_session)])
 
 
 # ---------------------------------------------------------------------------
