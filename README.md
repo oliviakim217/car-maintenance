@@ -2,6 +2,10 @@
 
 A personal web app for tracking scheduled maintenance on a 2021 Mazda 3. Displays all maintenance tasks with their current status (due, upcoming, or OK) based on current mileage and date. Tasks are stored in Airtable.
 
+## Screenshot
+
+![Dashboard](docs/dashboard.png)
+
 ## Features
 
 - Dashboard showing all maintenance tasks sorted by urgency

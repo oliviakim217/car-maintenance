@@ -8,9 +8,9 @@ relevant.
 
 | File | When to read |
 |------|--------------|
-| `.claude/python-rules.md` | Any time you write or modify Python code |
-| `.claude/naming-rules.md` | Any time you write or modify Python code |
-| `.claude/scalability-rules.md` | Any time you add a new feature, module, route, or service |
+| `.claude/rules/python-rules.md` | Any time you write or modify Python code |
+| `.claude/rules/naming-rules.md` | Any time you write or modify Python code |
+| `.claude/rules/scalability-rules.md` | Any time you add a new feature, module, route, or service |
 
 ## General
 

@@ -1,0 +1,32 @@
+# Like .gitignore, but tells Docker what to exclude from the image.
+# Keeping the image small and never bundling secrets.
+
+# Never include secrets
+.env
+
+# No need to bundle these into the image
+.git
+.gitignore
+.claude/
+.mcp.json
+.playwright-mcp/
+
+# Python cache files — always regenerated at runtime
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment — dependencies come from requirements.txt instead
+venv/
+.venv/
+env/
+
+# Test files — not needed in production
+tests/
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.DS_Store

@@ -8,12 +8,28 @@
 </head>
 <body>
 
+<!-- ── Login overlay ────────────────────────────────────────────── -->
+<div id="login-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
+  <div class="login-card">
+    <h2 id="login-title" class="login-title">Car Maintenance</h2>
+    <p class="login-sub">2021 Mazda 3</p>
+    <form id="login-form">
+      <label for="api-key-input" class="login-label">Password</label>
+      <input type="password" id="api-key-input" class="login-input"
+             placeholder="Enter your password" autocomplete="current-password" required />
+      <div id="login-error" class="login-error" role="alert"></div>
+      <button type="submit" class="btn btn-primary login-btn">Sign in</button>
+    </form>
+  </div>
+</div>
+
 <!-- ── Header ──────────────────────────────────────────────────── -->
 <header>
   <div class="header-left">
     <span class="header-title">Car Maintenance</span>
     <span class="header-sub">2021 Mazda 3</span>
   </div>
+  <button class="btn btn-ghost btn-sm" id="signout-btn" onclick="signOut()" style="display:none">Sign out</button>
 </header>
 
 <!-- ── Spinner overlay ─────────────────────────────────────────── -->
@@ -142,12 +158,69 @@
     $('spinner-overlay').classList.toggle('active', on);
   }
 
+  /* ── Auth helpers ───────────────────────────────────────────── */
+  function showLoginOverlay(errorMsg = '') {
+    $('login-overlay').classList.add('active');
+    $('signout-btn').style.display = 'none';
+    $('login-error').textContent = errorMsg;
+    $('api-key-input').value = '';
+    setTimeout(() => $('api-key-input').focus(), 50);
+  }
+
+  function hideLoginOverlay() {
+    $('login-overlay').classList.remove('active');
+    $('signout-btn').style.display = '';
+  }
+
+  async function signOut() {
+    await fetch('/logout', { method: 'POST' });
+    showLoginOverlay();
+  }
+
+  $('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = $('api-key-input').value.trim();
+    if (!password) return;
+    const btn = $('login-form').querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.status === 401) {
+        $('login-error').textContent = 'Incorrect password. Try again.';
+        $('api-key-input').value = '';
+        $('api-key-input').focus();
+        return;
+      }
+      if (!res.ok) {
+        $('login-error').textContent = 'Something went wrong. Try again.';
+        return;
+      }
+      hideLoginOverlay();
+      loadAll();
+    } catch (_) {
+      $('login-error').textContent = 'Could not reach the server.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  });
+
   /* ── API helpers ────────────────────────────────────────────── */
   async function apiFetch(url, options = {}) {
+    // Session cookie is sent automatically by the browser — no manual token needed
     const res = await fetch(url, {
       headers: { 'Content-Type': 'application/json' },
       ...options,
     });
+    if (res.status === 401) {
+      showLoginOverlay('Session expired. Please sign in again.');
+      throw new Error('Unauthorized');
+    }
     if (!res.ok) {
       let detail = `HTTP ${res.status}`;
       try { const j = await res.json(); detail = j.detail || j.message || detail; } catch (_) {}
@@ -195,7 +268,7 @@
   ───────────────────────────────────────────────────────────── */
   function categoryBadge(cat) {
     const c = (cat || 'general').toLowerCase().replace(/[^a-z]/g, '');
-    return `<span class="badge badge-${c}">${cat || 'general'}</span>`;
+    return `<span class="badge badge-${c}">${escapeHtml(cat || 'general')}</span>`;
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -263,7 +336,7 @@
     cells[bucket]   = buildDueCell(task);
 
     return `
-      <tr class="task-row status-${task.status}" id="task-row-${safeId}">
+      <tr class="task-row status-${escapeHtml(task.status)}" id="task-row-${safeId}">
         <td class="col-task">
           <div class="task-name-wrap">
             <span class="task-name">${escapeHtml(task.name)}</span>
@@ -474,7 +547,7 @@
   /* ─────────────────────────────────────────────────────────────
      Init
   ───────────────────────────────────────────────────────────── */
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     // Hide getting-started banner if previously dismissed
     if (localStorage.getItem('gs_dismissed')) {
       $('getting-started').style.display = 'none';
@@ -482,7 +555,19 @@
 
     // Set today as default date on odometer form
     $('odo-date').value = TODAY;
-    loadAll();
+
+    // Check session status before showing the dashboard
+    try {
+      const res = await fetch('/api/status');
+      if (res.ok) {
+        hideLoginOverlay();
+        loadAll();
+      } else {
+        showLoginOverlay();
+      }
+    } catch (_) {
+      showLoginOverlay('Could not reach the server.');
+    }
   });
 </script>
 </body>

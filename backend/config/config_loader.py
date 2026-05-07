@@ -54,6 +54,13 @@ class LoggingConfig(BaseModel):
     retention_days: int
 
 
+class RateLimitingConfig(BaseModel):
+    """Rate limiting thresholds for API endpoints."""
+
+    write_requests_per_minute: int
+    read_requests_per_minute: int
+
+
 class AppConfig(BaseModel):
     """Root application configuration model."""
 
@@ -62,6 +69,7 @@ class AppConfig(BaseModel):
     mileage: MileageConfig
     airtable: AirtableConfig
     logging: LoggingConfig
+    rate_limiting: RateLimitingConfig
 
 
 # ---------------------------------------------------------------------------
