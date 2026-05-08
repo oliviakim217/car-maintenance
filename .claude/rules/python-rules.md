@@ -106,7 +106,8 @@
        logger.error(f"ERROR:get_last_mileage_entry error=http_status status={exc.response.status_code}")
        raise
    except Exception as exc:
-       logger.error(f"ERROR:get_last_mileage_entry error={exc}", exc_info=True)
+       logger.error("ERROR:get_last_mileage_entry error_type=%s message=%s",
+                    type(exc).__name__, str(exc)[:200])
        raise
 ```
 2. Never use bare `except:`.
@@ -115,16 +116,17 @@
 ## Async
 
 1. FastAPI endpoint handlers must be `async def`.
-2. Use `await` for all `httpx` calls — never use `requests` in async context.
-   Using `requests` inside `async def` blocks the event loop and is a production bug.
-3. Do not mix sync and async without explicit thread pool delegation (`run_in_executor`).
+2. The `requests` library MUST NOT be imported anywhere in `backend/`. Use `httpx` (async client in routes/services, sync client only in `scripts/`).
+3. `await` every `httpx` call. Mixing sync and async without `asyncio.to_thread` is a production bug — it blocks the event loop and stalls all concurrent requests.
+4. Do not mix sync and async without explicit thread pool delegation (`asyncio.to_thread`).
 
 ## Security
 
 1. Never use `eval()` or `exec()` with any user input.
 2. Validate and sanitize all inputs before processing.
-3. Use parameterized queries if database calls are added.
-4. Secrets always from environment variables via `python-dotenv`.
+3. **Airtable formula injection**: never f-string user input into a `formula=` argument. Field names used in formulas come from an allowlist defined in YAML config. Use `pyairtable.formulas.match()` or `EQ()` builders rather than raw string interpolation.
+4. Never use `eval()`, `exec()`, `pickle.loads`, `yaml.load` (use `yaml.safe_load`), or `shell=True` in `subprocess`.
+5. Secrets always from environment variables via `python-dotenv`.
 
 ## Virtual Environment and Dependencies
 
@@ -142,8 +144,11 @@
 
 ## String Formatting
 
-1. Always use f-strings: `f"task={task_id} status={status} km_remaining={km_remaining}"`
-2. Never use `%` formatting or `.format()`.
+1. Use f-strings everywhere except in `logger.*` calls.
+2. In `logger.*` calls, use `%`-style placeholders — the format string is only evaluated when the log level is active:
+   - GOOD: `logger.info("BEGIN:op task_id=%s", task_id)`
+   - BAD: `logger.info(f"BEGIN:op task_id={task_id}")`
+3. Never use `%` formatting or `.format()` outside `logger.*` calls.
 
 ## Performance
 

@@ -28,7 +28,10 @@ relevant.
 
 1. **Error Handling**: Handle all errors gracefully. No unhandled exceptions that crash the app.
 2. **Security**: No credentials, URLs, or secrets in code. Use environment variables.
-3. **Performance**: No infinite loops. Handle timeouts. Avoid blocking calls in async context.
+3. **Performance**:
+   - All outbound HTTP calls must declare an explicit `httpx.Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)`. Never rely on library defaults.
+   - No unbounded loops. Any `while True` must have an exit condition and a max-iteration safety counter.
+   - Never call `time.sleep`, `requests.*`, or any blocking I/O inside `async def`. Use `asyncio.to_thread` or the async equivalent.
 4. **Monitoring**: Log all important operations, errors, and durations.
 5. **Reliability**: Handle edge cases, network failures, missing config, unexpected inputs.
 6. **Scalability**: Adding a new feature should not require rewriting existing modules.
@@ -48,6 +51,10 @@ relevant.
 7. Always measure and log `duration_ms` for any external API call.
 8. NEVER log: passwords, API tokens, Authorization headers, secrets, full payloads.
 9. Log retention period must come from config — never hardcoded.
+10. Never log raw exception objects from HTTP clients. `httpx` exceptions can carry request headers and response bodies containing secrets. Log only the type and a truncated message:
+    - GOOD: `logger.error("ERROR:op error_type=%s message=%s", type(exc).__name__, str(exc)[:200])`
+    - BAD: `logger.error(f"ERROR:op error={exc}", exc_info=True)`
+11. A logging filter in `backend/main.py` must scrub known secret patterns (`Bearer\s+\S+`, `pat[A-Z0-9]{14,}`, `Authorization`, `password`) from every log record before emission.
 
 ## Error Handling
 
@@ -80,6 +87,7 @@ preventing malformed or malicious data from reaching the Airtable API or busines
 4. Never forward raw request data to the Airtable API. Always pass validated, typed values.
 5. Apply these checks in the **Validation Pipeline** immediately after Pydantic validation,
    before any business logic.
+6. Every Pydantic request model MUST set `model_config = ConfigDict(extra="forbid")` so unknown fields are rejected with HTTP 422 rather than silently dropped.
 
 ## Config Files
 

@@ -4,7 +4,7 @@ A personal web app for tracking scheduled maintenance on a 2021 Mazda 3. Display
 
 ## Screenshot
 
-![Dashboard](docs/dashboard.png)
+![Dashboard](docs/dashboard-screenshot.png)
 
 ## Features
 

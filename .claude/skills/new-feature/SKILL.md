@@ -1,6 +1,10 @@
 ---
 description: Bootstrap a new feature module following project conventions. Creates the branch, module folder, service stub, and route stub.
 allowed-tools: Read Bash Write Edit Glob
+version: "1.1.0"
+last-updated: "2026-05-07"
+usage: /new-feature <feature-name>
+triggers: When starting work on a new domain feature
 ---
 
 Bootstrap a new feature module for the car maintenance app.
@@ -58,7 +62,6 @@ TODO: describe what this module does.
 
 import logging
 import time
-from typing import Dict
 
 from backend.config.config_loader import get_config
 
@@ -70,7 +73,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def example_operation() -> Dict:
+async def example_operation() -> dict[str, object]:
     """TODO: replace with real operations.
 
     Returns:
@@ -81,20 +84,25 @@ def example_operation() -> Dict:
     """
     start_ms = time.monotonic()
     logger.info("BEGIN:example_operation")
+    error: BaseException | None = None
     try:
         cfg = get_config()
         # TODO: implement
-        result: Dict = {}
-        logger.info(
-            f"END:example_operation duration_ms={int((time.monotonic() - start_ms) * 1000)}"
-        )
+        result: dict[str, object] = {}
         return result
     except Exception as exc:
+        error = exc
         logger.error(
-            f"ERROR:example_operation error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:example_operation error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
         )
         raise
+    finally:
+        logger.info(
+            "END:example_operation duration_ms=%d",
+            int((time.monotonic() - start_ms) * 1000),
+        )
 ```
 
 **`backend/routes/<name>_routes.py`**:
@@ -107,7 +115,6 @@ Thin route handlers — all business logic lives in <name>_service.
 
 import logging
 import time
-from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
@@ -143,23 +150,31 @@ class ExampleRequestBody(BaseModel):
 
 @router.get("/api/<name>")
 @limiter.limit(lambda: f"{get_config().rate_limiting.read_requests_per_minute}/minute")
-async def get_<name>(request: Request) -> Dict:
-    """TODO: describe what this endpoint returns."""
+async def get_<name>(request: Request) -> dict[str, object]:
+    """TODO: describe what this endpoint returns.
+    TODO: replace return type with a typed Pydantic response model.
+    """
     start_ms = time.monotonic()
     logger.info("BEGIN:get_<name>")
+    error: BaseException | None = None
     try:
-        result = example_operation()
-        return result
+        return await example_operation()
+    except HTTPException:
+        raise
     except Exception as exc:
+        error = exc
         logger.error(
-            f"ERROR:get_<name> error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_<name> error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
         )
         raise HTTPException(status_code=500, detail="Operation failed")
     finally:
-        logger.info(
-            f"END:get_<name> duration_ms={int((time.monotonic() - start_ms) * 1000)}"
-        )
+        duration_ms = int((time.monotonic() - start_ms) * 1000)
+        if error is None:
+            logger.info("END:get_<name> duration_ms=%d", duration_ms)
+        else:
+            logger.info("END:get_<name> duration_ms=%d outcome=error", duration_ms)
 ```
 
 ### 5. Register the router
