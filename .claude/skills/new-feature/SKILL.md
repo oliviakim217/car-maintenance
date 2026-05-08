@@ -1,6 +1,10 @@
 ---
 description: Bootstrap a new feature module following project conventions. Creates the branch, module folder, service stub, and route stub.
 allowed-tools: Read Bash Write Edit Glob
+version: "1.1.0"
+last-updated: "2026-05-07"
+usage: /new-feature <feature-name>
+triggers: When starting work on a new domain feature
 ---
 
 Bootstrap a new feature module for the car maintenance app.

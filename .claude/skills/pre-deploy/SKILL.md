@@ -1,6 +1,10 @@
 ---
 description: Pre-deployment checklist for the car maintenance app. Run this before every docker build and push to Render to catch common mistakes.
 allowed-tools: Bash Grep Read
+version: "1.1.0"
+last-updated: "2026-05-07"
+usage: /pre-deploy
+triggers: Before every docker build or Render deploy
 ---
 
 Run each check below and report **PASS** or **FAIL** with a one-line reason. At the end, give an overall verdict: safe to deploy or blockers found.
