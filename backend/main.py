@@ -53,7 +53,7 @@ class _SecretScrubFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = self._scrub(str(record.msg))
         if record.args:
-            record.args = tuple(self._scrub(str(a)) for a in record.args)
+            record.args = tuple(self._scrub(a) if isinstance(a, str) else a for a in record.args)
         return True
 
     def _scrub(self, text: str) -> str:
