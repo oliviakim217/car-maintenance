@@ -139,8 +139,10 @@ def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
         return results
     except Exception as exc:
         logger.error(
-            f"ERROR:get_all_tasks error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_all_tasks error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -168,8 +170,11 @@ def mark_task_done(table_name: str, task_id: str, done_km: int, done_date: date)
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:mark_task_done task_id={task_id} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:mark_task_done task_id=%s error_type=%s message=%s duration_ms=%d",
+            task_id,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 

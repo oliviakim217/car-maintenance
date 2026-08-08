@@ -119,8 +119,16 @@ def get_config() -> AppConfig:
         logger.info(f"END:load_config env={app_env} duration_ms=0")
         return config
     except yaml.YAMLError as exc:
-        logger.error(f"ERROR:load_config error=yaml parse failed detail={exc} duration_ms=0")
+        logger.error(
+            "ERROR:load_config error_type=%s message=%s duration_ms=0",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise
     except Exception as exc:
-        logger.error(f"ERROR:load_config error={exc} duration_ms=0")
+        logger.error(
+            "ERROR:load_config error_type=%s message=%s duration_ms=0",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise

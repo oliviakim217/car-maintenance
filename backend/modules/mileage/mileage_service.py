@@ -39,8 +39,10 @@ def get_last_reading() -> Dict:
         return entry
     except Exception as exc:
         logger.error(
-            f"ERROR:get_last_reading error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_last_reading error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -78,8 +80,10 @@ def get_current_km() -> int:
         return current_km
     except Exception as exc:
         logger.error(
-            f"ERROR:get_current_km error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_current_km error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -110,7 +114,9 @@ def add_manual_reading(km: int, reading_date: date) -> None:
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:add_manual_reading error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:add_manual_reading error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise

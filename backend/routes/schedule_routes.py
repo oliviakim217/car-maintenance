@@ -75,7 +75,12 @@ async def api_get_schedule(request: Request) -> List[TaskResult]:
         today = date.today()
         return get_all_tasks(current_km, today, cfg)
     except Exception as exc:
-        logger.error(f"ERROR:get_schedule error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:get_schedule error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Failed to retrieve schedule")
     finally:
         logger.info(f"END:get_schedule duration_ms={int((time.monotonic() - start_ms) * 1000)}")
@@ -106,7 +111,13 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
-        logger.error(f"ERROR:complete_task task_id={task_id} error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:complete_task task_id=%s error_type=%s message=%s duration_ms=%d",
+            task_id,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Failed to mark task as done")
     finally:
         logger.info(f"END:complete_task task_id={task_id} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
@@ -126,7 +137,11 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
             notes=body.notes,
         )
     except Exception as exc:
-        logger.error(f"ERROR:complete_task maintenance_log error={exc}")
+        logger.error(
+            "ERROR:complete_task maintenance_log error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
 
     # Return updated task with recomputed status
     try:
@@ -141,5 +156,9 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"ERROR:complete_task recompute error={exc}")
+        logger.error(
+            "ERROR:complete_task recompute error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise HTTPException(status_code=500, detail="Task updated but failed to return result")

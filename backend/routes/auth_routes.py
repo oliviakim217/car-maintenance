@@ -40,7 +40,12 @@ async def api_post_login(request: Request, body: LoginBody) -> dict:
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"ERROR:login error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:login error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Login failed")
     finally:
         logger.info(f"END:login duration_ms={int((time.monotonic() - start_ms) * 1000)}")
