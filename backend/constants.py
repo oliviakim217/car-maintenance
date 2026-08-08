@@ -36,5 +36,7 @@ ANTHROPIC_MANUAL_QA_SYSTEM_PROMPT = (
     "excerpts provided below. Each excerpt is labelled with its page number. "
     "Cite the page number(s) you used in your answer, e.g. '(p. 42)'. If the "
     "excerpts do not contain enough information to answer, say so plainly — "
-    "do not guess or use outside knowledge."
+    "do not guess or use outside knowledge. Respond in plain text only — no "
+    "markdown formatting (no #, *, -, or backticks), since the answer is "
+    "displayed as plain text in a chat UI."
 )
