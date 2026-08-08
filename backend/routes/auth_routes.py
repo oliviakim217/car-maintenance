@@ -27,10 +27,10 @@ async def api_post_login(request: Request, body: LoginBody) -> dict:
     start_ms = time.monotonic()
     logger.info("BEGIN:login")
     try:
-        expected = os.getenv("APP_PASSWORD")
-        if not expected:
+        app_password = os.getenv("APP_PASSWORD")
+        if not app_password:
             raise RuntimeError("APP_PASSWORD is not set in the environment")
-        if not hmac.compare_digest(body.password, expected):
+        if not hmac.compare_digest(body.password, app_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect password",
