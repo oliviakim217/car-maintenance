@@ -67,7 +67,7 @@ async def api_get_mileage(request: Request) -> Dict:
     logger.info("BEGIN:get_mileage")
     try:
         cfg = get_config()
-        last = get_last_reading()
+        last = await get_last_reading()
         last_km: int = last["km"]
         last_date = date.fromisoformat(last["date"])
         today = date.today()
@@ -113,7 +113,7 @@ async def api_post_mileage(request: Request, body: AddMileageBody) -> Dict:
     logger.info(f"BEGIN:post_mileage km={body.km} date={body.date}")
     try:
         reading_date = date.fromisoformat(body.date)  # guaranteed valid by Pydantic
-        add_manual_reading(km=body.km, reading_date=reading_date)
+        await add_manual_reading(km=body.km, reading_date=reading_date)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
@@ -130,7 +130,7 @@ async def api_post_mileage(request: Request, body: AddMileageBody) -> Dict:
     # Return updated summary
     try:
         cfg = get_config()
-        last = get_last_reading()
+        last = await get_last_reading()
         last_km: int = last["km"]
         last_date = date.fromisoformat(last["date"])
         today = date.today()

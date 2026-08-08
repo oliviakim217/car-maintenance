@@ -4,6 +4,7 @@ Manages reading and writing of odometer data stored in Airtable (Mileage table),
 and provides an estimated current mileage based on configured daily averages.
 """
 
+import asyncio
 import logging
 import time
 from datetime import date
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def get_last_reading() -> Dict:
+async def get_last_reading() -> Dict:
     """Return the most recent manual odometer entry from Airtable.
 
     Returns:
@@ -34,7 +35,7 @@ def get_last_reading() -> Dict:
     logger.info("BEGIN:get_last_reading")
     try:
         cfg = get_config()
-        entry = get_last_mileage_entry(cfg.airtable.mileage_table)
+        entry = await asyncio.to_thread(get_last_mileage_entry, cfg.airtable.mileage_table)
         logger.info(f"END:get_last_reading duration_ms={int((time.monotonic() - start_ms) * 1000)}")
         return entry
     except Exception as exc:
@@ -47,7 +48,7 @@ def get_last_reading() -> Dict:
         raise
 
 
-def get_current_km() -> int:
+async def get_current_km() -> int:
     """Return the estimated current odometer reading.
 
     Takes the latest manual reading and adds the estimated km driven since
@@ -60,7 +61,7 @@ def get_current_km() -> int:
     logger.info("BEGIN:get_current_km")
     try:
         cfg = get_config()
-        last = get_last_reading()
+        last = await get_last_reading()
 
         last_km: int = int(last["km"])
         last_date = date.fromisoformat(last["date"])
@@ -88,7 +89,7 @@ def get_current_km() -> int:
         raise
 
 
-def add_manual_reading(km: int, reading_date: date) -> None:
+async def add_manual_reading(km: int, reading_date: date) -> None:
     """Append a new manual odometer reading to Airtable.
 
     Args:
@@ -107,7 +108,7 @@ def add_manual_reading(km: int, reading_date: date) -> None:
 
     try:
         cfg = get_config()
-        add_mileage_entry(cfg.airtable.mileage_table, km, reading_date)
+        await asyncio.to_thread(add_mileage_entry, cfg.airtable.mileage_table, km, reading_date)
         logger.info(
             f"END:add_manual_reading km={km} date={reading_date} "
             f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
