@@ -1,11 +1,11 @@
 ---
 description: "Dev environment config for Car Maintenance app"
 environment: "dev"
-version: "2.0.0"
-last_updated: "2026-05-02"
+version: "2.1.0"
+last_updated: "2026-08-08"
 ---
 
-version: 2
+version: 3
 
 vehicle:
   year: 2021
@@ -32,3 +32,14 @@ logging:
 rate_limiting:
   write_requests_per_minute: 20
   read_requests_per_minute: 60
+
+dashboard_scan:
+  max_image_size_mb: 10
+  allowed_types:
+    - image/jpeg
+    - image/png
+    - image/heic
+    - image/webp
+  min_km_plausible: 1000
+  max_km_plausible: 500000
+  model: "claude-haiku-4-5-20251001"

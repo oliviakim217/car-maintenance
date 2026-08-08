@@ -81,7 +81,12 @@
 
       <!-- Update odometer -->
       <div id="odometer-form-wrapper">
-        <button class="btn btn-primary btn-sm" id="btn-toggle-odometer">Update Odometer</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button class="btn btn-primary btn-sm" id="btn-toggle-odometer">Update Odometer</button>
+          <button class="btn btn-ghost btn-sm" id="btn-take-photo">Take a Photo</button>
+          <span id="photo-mobile-hint" style="display:none; font-size:.82rem; color:#64748b;">Please use your phone to use this feature.</span>
+          <input type="file" id="photo-input" accept="image/*" style="display:none" />
+        </div>
         <form id="odometer-form" autocomplete="off">
           <div class="form-row">
             <div class="form-group">
@@ -101,6 +106,13 @@
             <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-odometer">Cancel</button>
           </div>
         </form>
+        <div id="photo-confirm-panel" style="display:none; margin-top:12px; padding:14px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+          <p id="photo-confirm-msg" style="margin:0 0 12px; font-size:.9rem; color:#1a1a2e;"></p>
+          <div class="form-row">
+            <button type="button" class="btn btn-success btn-sm" id="btn-photo-save">Save Reading</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-photo-cancel">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -477,9 +489,77 @@
   ───────────────────────────────────────────────────────────── */
   $('btn-toggle-odometer').addEventListener('click', () => {
     $('odometer-form').classList.toggle('open');
+    $('photo-confirm-panel').style.display = 'none';
   });
   $('btn-cancel-odometer').addEventListener('click', () => {
     $('odometer-form').classList.remove('open');
+  });
+
+  /* ─────────────────────────────────────────────────────────────
+     Dashboard photo upload
+  ───────────────────────────────────────────────────────────── */
+  let _pendingPhotoKm = null;
+
+  $('btn-take-photo').addEventListener('click', () => {
+    $('photo-input').click();
+  });
+
+  $('photo-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setLoading(true);
+    clearError();
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/dashboard/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.status === 401) {
+        showLoginOverlay('Session expired. Please sign in again.');
+        return;
+      }
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try { const j = await res.json(); detail = j.detail || detail; } catch (_) {}
+        throw new Error(detail);
+      }
+      const data = await res.json();
+      _pendingPhotoKm = data.extracted_km;
+      $('photo-confirm-msg').textContent = data.message + ' Save this reading?';
+      $('photo-confirm-panel').style.display = '';
+      $('odometer-form').classList.remove('open');
+    } catch (err) {
+      showToast(`Could not read photo: ${err.message}`, 'error');
+    } finally {
+      setLoading(false);
+      e.target.value = '';
+    }
+  });
+
+  $('btn-photo-save').addEventListener('click', async () => {
+    if (!_pendingPhotoKm) return;
+    setLoading(true);
+    clearError();
+    try {
+      await apiFetch('/api/mileage', {
+        method: 'POST',
+        body: JSON.stringify({ km: _pendingPhotoKm, date: TODAY }),
+      });
+      $('photo-confirm-panel').style.display = 'none';
+      _pendingPhotoKm = null;
+      showToast('Mileage updated from photo!', 'success');
+      await loadAll();
+    } catch (err) {
+      showToast(`Error: ${err.message}`, 'error');
+      setLoading(false);
+    }
+  });
+
+  $('btn-photo-cancel').addEventListener('click', () => {
+    $('photo-confirm-panel').style.display = 'none';
+    _pendingPhotoKm = null;
   });
 
   /* ─────────────────────────────────────────────────────────────
@@ -551,6 +631,12 @@
     // Hide getting-started banner if previously dismissed
     if (localStorage.getItem('gs_dismissed')) {
       $('getting-started').style.display = 'none';
+    }
+
+    // Show Take a Photo only on mobile; replace with hint on desktop
+    if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      $('btn-take-photo').style.display = 'none';
+      $('photo-mobile-hint').style.display = '';
     }
 
     // Set today as default date on odometer form
