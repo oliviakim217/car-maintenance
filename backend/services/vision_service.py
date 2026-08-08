@@ -11,14 +11,9 @@ import time
 import anthropic
 import httpx
 
-logger = logging.getLogger(__name__)
+from backend.constants import ANTHROPIC_MAX_TOKENS_ODOMETER, ANTHROPIC_ODOMETER_PROMPT
 
-_ODOMETER_PROMPT = (
-    "Look at this car dashboard image. Find the odometer reading and return ONLY "
-    "the number in kilometres as a plain integer — no units, commas, spaces, or "
-    "other text. If you cannot read the odometer clearly, respond with the single "
-    "word UNREADABLE."
-)
+logger = logging.getLogger(__name__)
 
 
 async def extract_odometer_from_image(
@@ -41,21 +36,21 @@ async def extract_odometer_from_image(
         RuntimeError: If ANTHROPIC_API_KEY is not set.
         Exception: On API or network errors.
     """
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not anthropic_api_key:
         raise RuntimeError("ANTHROPIC_API_KEY environment variable is not set")
 
     start_ms = time.monotonic()
     logger.info("BEGIN:extract_odometer_from_image model=%s", model)
     try:
-        client = anthropic.AsyncAnthropic(
-            api_key=api_key,
+        anthropic_client = anthropic.AsyncAnthropic(
+            api_key=anthropic_api_key,
             timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
         )
         image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
-        message = await client.messages.create(
+        message = await anthropic_client.messages.create(
             model=model,
-            max_tokens=64,
+            max_tokens=ANTHROPIC_MAX_TOKENS_ODOMETER,
             messages=[
                 {
                     "role": "user",
@@ -68,7 +63,7 @@ async def extract_odometer_from_image(
                                 "data": image_b64,
                             },
                         },
-                        {"type": "text", "text": _ODOMETER_PROMPT},
+                        {"type": "text", "text": ANTHROPIC_ODOMETER_PROMPT},
                     ],
                 }
             ],
