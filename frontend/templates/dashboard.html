@@ -329,7 +329,7 @@
      Build a table row for one task
   ───────────────────────────────────────────────────────────── */
   function buildTaskRow(task, currentKm) {
-    const safeId    = escapeHtml(task.id);
+    const safeId    = escapeHtml(task.task_id);
     const bucket    = getTimeBucket(task);
     const prefillKm = currentKm ? Math.round(currentKm) : '';
     const cells     = ['', '', ''];

@@ -24,7 +24,7 @@ class TaskResult(BaseModel):
     """
 
     # Raw fields from tasks.json
-    id: str
+    task_id: str
     name: str
     category: str
     interval_km: Optional[int] = None
