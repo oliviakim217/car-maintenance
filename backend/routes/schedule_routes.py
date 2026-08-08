@@ -63,7 +63,7 @@ class CompleteTaskBody(BaseModel):
 
 @router.get("/api/schedule", response_model=List[TaskResult])
 @limiter.limit(lambda: f"{get_config().rate_limiting.read_requests_per_minute}/minute")
-async def get_schedule(request: Request) -> List[TaskResult]:
+async def api_get_schedule(request: Request) -> List[TaskResult]:
     """Return all maintenance tasks with their computed status.
 
     Current km is auto-calculated from the latest mileage entry plus
@@ -85,7 +85,7 @@ async def get_schedule(request: Request) -> List[TaskResult]:
 
 @router.post("/api/tasks/{task_id}/complete", response_model=TaskResult)
 @limiter.limit(lambda: f"{get_config().rate_limiting.write_requests_per_minute}/minute")
-async def complete_task(request: Request, task_id: str, body: CompleteTaskBody) -> TaskResult:
+async def api_post_complete_task(request: Request, task_id: str, body: CompleteTaskBody) -> TaskResult:
     """Mark a maintenance task as completed.
 
     Updates last_done fields in Airtable, appends a record to the

@@ -137,7 +137,7 @@ app.include_router(mileage_router)
 
 
 @app.get("/health", include_in_schema=False)
-async def health() -> dict:
+async def api_get_health() -> dict:
     return {"status": "ok"}
 
 
@@ -147,7 +147,7 @@ async def health() -> dict:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def serve_dashboard(request: Request) -> HTMLResponse:
+async def api_get_dashboard_page(request: Request) -> HTMLResponse:
     """Serve the main dashboard HTML template.
 
     Args:
