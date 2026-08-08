@@ -14,7 +14,7 @@ from typing import AsyncGenerator
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
@@ -138,6 +138,32 @@ class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class _MaxUploadSizeMiddleware(BaseHTTPMiddleware):
+    """Reject oversized dashboard-photo uploads via Content-Length, before
+    Starlette buffers and parses the multipart body.
+
+    This is a defense-in-depth check alongside the post-read size check in
+    api_upload_dashboard_photo — it does not cover chunked-encoded requests
+    (which omit Content-Length), but blocks the common case of a client
+    sending an oversized body with an honest Content-Length header.
+    """
+
+    _UPLOAD_PATH = "/api/dashboard/upload"
+    _CONTENT_LENGTH_HEADROOM_BYTES = 8192
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        if request.url.path == self._UPLOAD_PATH:
+            content_length = request.headers.get("content-length")
+            if content_length is not None:
+                max_bytes = int(get_config().dashboard_scan.max_image_size_mb * 1024 * 1024)
+                if int(content_length) > max_bytes + self._CONTENT_LENGTH_HEADROOM_BYTES:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": "Image too large"},
+                    )
+        return await call_next(request)
+
+
 app = FastAPI(
     title="Car Maintenance Reminder",
     description="Track and schedule maintenance for your Mazda 3.",
@@ -149,6 +175,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(_SecurityHeadersMiddleware)
+app.add_middleware(_MaxUploadSizeMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=_app_secret_key,
