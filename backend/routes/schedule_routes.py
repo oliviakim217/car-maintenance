@@ -5,7 +5,6 @@ is delegated to schedule_service and related services.
 """
 
 import logging
-import re
 import time
 from datetime import date
 from typing import List
@@ -14,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from backend.config.config_loader import get_config
+from backend.constants import TASK_ID_PATTERN
 from backend.modules.mileage.mileage_service import get_current_km
 from backend.modules.schedule.models import TaskResult
 from backend.modules.schedule.schedule_service import (
@@ -26,8 +26,6 @@ from backend.utils.auth import require_session
 from backend.utils.limiter import limiter
 
 logger = logging.getLogger(__name__)
-
-_TASK_ID_RE = re.compile(r"^[a-z0-9_]{1,64}$")
 
 router = APIRouter(dependencies=[Depends(require_session)])
 
@@ -95,7 +93,7 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
         task_id: The unique task identifier (task_id field value).
         body: JSON body with done_km, done_date (ISO string), and notes.
     """
-    if not _TASK_ID_RE.match(task_id):
+    if not TASK_ID_PATTERN.match(task_id):
         raise HTTPException(status_code=422, detail="Invalid task_id format")
 
     done_date = date.fromisoformat(body.done_date)  # guaranteed valid by Pydantic
