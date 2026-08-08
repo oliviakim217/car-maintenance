@@ -81,9 +81,10 @@
 
       <!-- Update odometer -->
       <div id="odometer-form-wrapper">
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <button class="btn btn-primary btn-sm" id="btn-toggle-odometer">Update Odometer</button>
           <button class="btn btn-ghost btn-sm" id="btn-take-photo">Take a Photo</button>
+          <span id="photo-mobile-hint" style="display:none; font-size:.82rem; color:#64748b;">Please use your phone to use this feature.</span>
           <input type="file" id="photo-input" accept="image/*" style="display:none" />
         </div>
         <form id="odometer-form" autocomplete="off">
@@ -630,6 +631,12 @@
     // Hide getting-started banner if previously dismissed
     if (localStorage.getItem('gs_dismissed')) {
       $('getting-started').style.display = 'none';
+    }
+
+    // Show Take a Photo only on mobile; replace with hint on desktop
+    if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      $('btn-take-photo').style.display = 'none';
+      $('photo-mobile-hint').style.display = '';
     }
 
     // Set today as default date on odometer form
