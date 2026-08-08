@@ -68,3 +68,21 @@ type: project
 - No HEALTHCHECK instruction.
 - .dockerignore correctly excludes .env, .git, tests/, .claude/, venv/.
 - CMD uses `--host 0.0.0.0` which is correct for container networking.
+
+## Dashboard Scan Feature (as of Audit 4, 2026-08-08)
+- Auth: router uses `dependencies=[Depends(require_session)]` — all endpoints including upload are session-protected. Correct.
+- Rate limiting: `@limiter.limit(lambda: ...)` applied to upload endpoint using write_requests_per_minute from config. Correct.
+- File type validation: `file.content_type` is user-controlled HTTP header — checked against allowlist AFTER read, not verified against actual file magic bytes. Attacker can upload arbitrary file as image/jpeg.
+- File size: validated in dashboard_service.py against config value after full read into memory — DoS risk if max_image_size_mb is large. No streaming read or FastAPI max-size limit set before buffering.
+- media_type passed to Anthropic API verbatim from user-controlled header (after allowlist check). Allowlist check in dashboard_service is the sole guard.
+- `int(raw_text.replace(",", "").replace(" ", ""))` on Claude response: safe for ValueError (raised then re-raised), but IndexError on empty `message.content` is unguarded.
+- `message.content[0].text` accessed without guarding against empty list — IndexError would propagate as HTTP 500 (safe for user, but improper).
+- No logging scrub filter in main.py — CLAUDE.md requires one (Bearer/pat/Authorization/password scrubber). Still missing.
+- Security headers middleware (_SecurityHeadersMiddleware) is NOW present in main.py — H-NEW-3 from Audit 2 is FIXED.
+- GET endpoints still have no rate limiting (carry-forward from Audit 2/3).
+- Dockerfile USER instruction and HEALTHCHECK status not re-verified in Audit 4.
+- `int()` parse: `raw_text` after replace could still be non-numeric if Claude produces unexpected output (e.g., negative sign, decimal, scientific notation) — int("-1") succeeds and passes plausibility check; int("1e5") raises ValueError (caught). Negative values would fail plausibility (min_km_plausible=1000).
+- Prompt injection via image metadata: no real attack surface — image bytes are sent as base64 data, not parsed text. Metadata fields (EXIF) are not extracted and injected into the prompt. Low risk.
+- Model name comes from config (cfg_scan.model), not user input. Safe.
+- ANTHROPIC_API_KEY read from env at call time, not cached — correct. Not logged.
+- Log in route logs `file.content_type` (user-controlled) at INFO — value is bounded by allowlist check downstream; leaks user-supplied string to logs, but at INFO not ERROR, and no secret data.

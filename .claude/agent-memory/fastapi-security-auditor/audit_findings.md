@@ -90,3 +90,33 @@ L-NEW-4 OPEN: TaskResult output model has no `extra='forbid'`/`extra='ignore'`.
 
 ### Status
 Reported to user 2026-05-06. Unfixed items from Audit 2 carry forward.
+
+---
+
+## Audit 4 — 2026-08-08 (dashboard scan feature, feature/update-skills branch)
+
+Files reviewed: dashboard_routes.py, dashboard_service.py, vision_service.py, models.py (dashboard_scan), config_loader.py (DashboardScanConfig), configs/dev/config.yaml, configs/prod/config.yaml, main.py, backend/utils/auth.py, backend/utils/limiter.py.
+
+### Critical
+- D-C1: No logging secrets scrub filter in main.py. CLAUDE.md requires a logging.Filter scrubbing Bearer/pat/Authorization/password patterns from every log record. Still missing entirely.
+
+### High
+- D-H1: File type validated by user-controlled Content-Type header only — no magic bytes check. Attacker can send a malicious file (e.g., HTML, binary) with Content-Type: image/jpeg and it passes validation and is forwarded to the Anthropic API as an "image".
+
+### Medium
+- D-M1: Entire file is read into memory (`await file.read()`) before size check — a large upload fills server RAM before the 10 MB guard triggers. No FastAPI/Starlette request body size limit set at the ASGI layer.
+- D-M2: `message.content[0].text` in vision_service.py is accessed without guarding for an empty content list — an IndexError propagates as HTTP 500 with no domain-specific error message.
+- D-M3: `int(raw_text...)` in vision_service.py: a negative result (e.g., Claude hallucinating "-1") successfully parses and is caught by plausibility bounds, but a decimal response (e.g., "1234.5") raises ValueError which is re-raised as HTTP 422 with the raw Claude output in the message. Acceptable but worth noting.
+- D-M4: GET endpoints (GET /api/mileage, GET /api/schedule) still have no rate limiting (carry-forward from Audit 2). `read_requests_per_minute` in config is still unused.
+
+### Low / Informational
+- D-L1: `file.content_type` (user-controlled string) is logged at INFO level in the route before validation — value reaches logs regardless of allowlist outcome. The value is bounded to a MIME string but is still unvalidated at the point of logging.
+- D-L2: Dockerfile USER and HEALTHCHECK still open (carry-forward from Audit 2/3).
+- D-L3: config_loader logs full filesystem path (carry-forward).
+- D-L4: TaskResult output model no extra='ignore' (carry-forward).
+
+### Fixed (compared to Audit 3)
+- H-NEW-3 FIXED: _SecurityHeadersMiddleware is now present in main.py — X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and Content-Security-Policy headers are set on all responses.
+
+### Status
+Reported to user 2026-08-08. D-C1, D-H1, D-M1, D-M2 are new findings requiring fixes.
