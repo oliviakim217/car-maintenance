@@ -60,6 +60,7 @@ class RateLimitingConfig(BaseModel):
 
     write_requests_per_minute: int
     read_requests_per_minute: int
+    login_requests_per_minute: int
 
 
 class DashboardScanConfig(BaseModel):
