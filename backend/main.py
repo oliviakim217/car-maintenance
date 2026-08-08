@@ -14,7 +14,7 @@ from typing import AsyncGenerator
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi import _rate_limit_exceeded_handler
@@ -43,9 +43,9 @@ class _SecretScrubFilter(logging.Filter):
 
     _PATTERNS = [
         re.compile(r"Bearer\s+\S+", re.IGNORECASE),
-        re.compile(r"pat[A-Z0-9]{14,}"),
-        re.compile(r"(Authorization\s*[:=]\s*)\S+", re.IGNORECASE),
-        re.compile(r"(password\s*[:=]\s*)\S+", re.IGNORECASE),
+        re.compile(r"pat[A-Za-z0-9]{14,}(?:\.[A-Za-z0-9]+)?"),
+        re.compile(r'Authorization["\']?\s*[:=]\s*["\']?.+', re.IGNORECASE),
+        re.compile(r'password["\']?\s*[:=]\s*["\']?.+', re.IGNORECASE),
     ]
     _REPLACEMENT = "[REDACTED]"
 
@@ -61,8 +61,11 @@ class _SecretScrubFilter(logging.Filter):
         return text
 
 
+_secret_scrub_filter = _SecretScrubFilter()
 for _handler in logging.root.handlers:
-    _handler.addFilter(_SecretScrubFilter())
+    _handler.addFilter(_secret_scrub_filter)
+for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+    logging.getLogger(_uvicorn_logger_name).addFilter(_secret_scrub_filter)
 
 # ---------------------------------------------------------------------------
 # Application imports (after dotenv + logging are initialised)
@@ -74,6 +77,7 @@ from backend.routes.auth_routes import router as auth_router  # noqa: E402
 from backend.routes.dashboard_routes import router as dashboard_router  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
+from backend.utils.env_utils import get_required_app_env  # noqa: E402
 from backend.utils.limiter import limiter  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -104,8 +108,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:app_startup error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:app_startup error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
     yield
     logger.info("END:app_shutdown")
@@ -115,7 +121,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # FastAPI app
 # ---------------------------------------------------------------------------
 
-_app_env = os.getenv("APP_ENV", "dev")
+_app_env = get_required_app_env()
 _app_secret_key = os.getenv("APP_SECRET_KEY")
 if not _app_secret_key:
     raise RuntimeError("APP_SECRET_KEY is not set in the environment")
@@ -126,10 +132,37 @@ class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
-        )
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        if _app_env == "prod":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
+
+
+class _MaxUploadSizeMiddleware(BaseHTTPMiddleware):
+    """Reject oversized dashboard-photo uploads via Content-Length, before
+    Starlette buffers and parses the multipart body.
+
+    This is a defense-in-depth check alongside the post-read size check in
+    api_upload_dashboard_photo — it does not cover chunked-encoded requests
+    (which omit Content-Length), but blocks the common case of a client
+    sending an oversized body with an honest Content-Length header.
+    """
+
+    _UPLOAD_PATH = "/api/dashboard/upload"
+    _CONTENT_LENGTH_HEADROOM_BYTES = 8192
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        if request.url.path == self._UPLOAD_PATH:
+            content_length = request.headers.get("content-length")
+            if content_length is not None:
+                max_bytes = int(get_config().dashboard_scan.max_image_size_mb * 1024 * 1024)
+                if int(content_length) > max_bytes + self._CONTENT_LENGTH_HEADROOM_BYTES:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": "Image too large"},
+                    )
+        return await call_next(request)
 
 
 app = FastAPI(
@@ -143,6 +176,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(_SecurityHeadersMiddleware)
+app.add_middleware(_MaxUploadSizeMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=_app_secret_key,

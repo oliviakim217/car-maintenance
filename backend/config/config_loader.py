@@ -5,7 +5,6 @@ typed Pydantic model. Implements a singleton so the file is read only once.
 """
 
 import logging
-import os
 from functools import lru_cache
 from typing import Optional
 
@@ -13,6 +12,7 @@ import yaml
 from pydantic import BaseModel
 
 from backend.constants import PROJECT_ROOT_PATH
+from backend.utils.env_utils import get_required_app_env
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +60,7 @@ class RateLimitingConfig(BaseModel):
 
     write_requests_per_minute: int
     read_requests_per_minute: int
+    login_requests_per_minute: int
 
 
 class DashboardScanConfig(BaseModel):
@@ -92,17 +93,18 @@ class AppConfig(BaseModel):
 def get_config() -> AppConfig:
     """Load and return the application config as a singleton.
 
-    Reads APP_ENV from the environment (default: 'dev') and loads the
-    corresponding YAML file from configs/{APP_ENV}/config.yaml.
+    Reads APP_ENV from the environment (must be explicitly 'dev' or 'prod')
+    and loads the corresponding YAML file from configs/{APP_ENV}/config.yaml.
 
     Returns:
         AppConfig: Parsed and validated application configuration.
 
     Raises:
+        RuntimeError: If APP_ENV is unset or not a recognised environment.
         FileNotFoundError: If the config file does not exist.
         ValueError: If the YAML content fails Pydantic validation.
     """
-    app_env = os.getenv("APP_ENV", "dev")
+    app_env = get_required_app_env()
     config_path = PROJECT_ROOT_PATH / "configs" / app_env / "config.yaml"
 
     logger.info(f"BEGIN:load_config env={app_env} path={config_path}")
@@ -119,8 +121,16 @@ def get_config() -> AppConfig:
         logger.info(f"END:load_config env={app_env} duration_ms=0")
         return config
     except yaml.YAMLError as exc:
-        logger.error(f"ERROR:load_config error=yaml parse failed detail={exc} duration_ms=0")
+        logger.error(
+            "ERROR:load_config error_type=%s message=%s duration_ms=0",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise
     except Exception as exc:
-        logger.error(f"ERROR:load_config error={exc} duration_ms=0")
+        logger.error(
+            "ERROR:load_config error_type=%s message=%s duration_ms=0",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise

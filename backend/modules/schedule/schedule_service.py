@@ -4,6 +4,7 @@ Handles loading tasks from Airtable, computing maintenance status, and
 recording task completions.
 """
 
+import asyncio
 import logging
 import time
 from datetime import date
@@ -114,7 +115,7 @@ def _compute_task_status(task: Dict, current_km: int, current_date: date, cfg) -
 # ---------------------------------------------------------------------------
 
 
-def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
+async def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
     """Load all tasks from Airtable and compute their status.
 
     Args:
@@ -128,7 +129,7 @@ def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
     start_ms = time.monotonic()
     logger.info(f"BEGIN:get_all_tasks current_km={current_km} current_date={current_date}")
     try:
-        tasks = get_all_task_dicts(cfg.airtable.tasks_table)
+        tasks = await asyncio.to_thread(get_all_task_dicts, cfg.airtable.tasks_table)
         results = [
             _compute_task_status(task_dict, current_km, current_date, cfg) for task_dict in tasks
         ]
@@ -139,13 +140,15 @@ def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
         return results
     except Exception as exc:
         logger.error(
-            f"ERROR:get_all_tasks error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_all_tasks error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
 
-def mark_task_done(table_name: str, task_id: str, done_km: int, done_date: date) -> None:
+async def mark_task_done(table_name: str, task_id: str, done_km: int, done_date: date) -> None:
     """Update a task's last_done_km and last_done_date fields in Airtable.
 
     Args:
@@ -161,20 +164,23 @@ def mark_task_done(table_name: str, task_id: str, done_km: int, done_date: date)
     start_ms = time.monotonic()
     logger.info(f"BEGIN:mark_task_done task_id={task_id} done_km={done_km} done_date={done_date}")
     try:
-        update_task_done(table_name, task_id, done_km, done_date)
+        await asyncio.to_thread(update_task_done, table_name, task_id, done_km, done_date)
         logger.info(
             f"END:mark_task_done task_id={task_id} "
             f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:mark_task_done task_id={task_id} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:mark_task_done task_id=%s error_type=%s message=%s duration_ms=%d",
+            task_id,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
 
-def get_one_task_result(
+async def get_one_task_result(
     table_name: str,
     task_id: str,
     current_km: int,
@@ -193,7 +199,7 @@ def get_one_task_result(
     Returns:
         TaskResult if found, or None if no matching task exists.
     """
-    task = get_task_dict(table_name, task_id)
+    task = await asyncio.to_thread(get_task_dict, table_name, task_id)
     if task is None:
         return None
     return _compute_task_status(task, current_km, current_date, cfg)

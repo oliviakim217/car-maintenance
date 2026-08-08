@@ -8,6 +8,7 @@ import time
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
+from backend.config.config_loader import get_config
 from backend.utils.limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ class LoginBody(BaseModel):
 
 
 @router.post("/login")
-@limiter.limit("5/minute")
+@limiter.limit(lambda: f"{get_config().rate_limiting.login_requests_per_minute}/minute")
 async def api_post_login(request: Request, body: LoginBody) -> dict:
     """Verify password and create an authenticated session."""
     start_ms = time.monotonic()
@@ -40,7 +41,12 @@ async def api_post_login(request: Request, body: LoginBody) -> dict:
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"ERROR:login error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:login error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Login failed")
     finally:
         logger.info(f"END:login duration_ms={int((time.monotonic() - start_ms) * 1000)}")

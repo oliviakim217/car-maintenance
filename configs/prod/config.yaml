@@ -1,11 +1,11 @@
 ---
 description: "Production environment config for Car Maintenance app"
 environment: "prod"
-version: "2.1.0"
+version: "2.2.0"
 last_updated: "2026-08-08"
 ---
 
-version: 3
+version: 4
 
 vehicle:
   year: 2021
@@ -32,6 +32,7 @@ logging:
 rate_limiting:
   write_requests_per_minute: 10
   read_requests_per_minute: 60
+  login_requests_per_minute: 5
 
 dashboard_scan:
   max_image_size_mb: 10

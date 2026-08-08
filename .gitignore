@@ -25,6 +25,7 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+.playwright-mcp/
 
 # OS
 .DS_Store

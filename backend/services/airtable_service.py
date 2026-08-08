@@ -32,6 +32,8 @@ from typing import Dict, List, Optional
 from pyairtable import Api
 from pyairtable.formulas import match
 
+from backend.utils.env_utils import get_required_app_env
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +60,7 @@ def _resolve_base_id() -> str:
     Raises:
         RuntimeError: If the required env var is not set.
     """
-    app_env = os.getenv("APP_ENV", "dev")
+    app_env = get_required_app_env()
     env_key = f"AIRTABLE_BASE_ID_{app_env.upper()}"
     airtable_base_id = os.getenv(env_key)
     if not airtable_base_id:
@@ -108,8 +110,11 @@ def get_all_task_dicts(table_name: str) -> List[Dict]:
         return tasks
     except Exception as exc:
         logger.error(
-            f"ERROR:get_all_task_dicts table={table_name} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_all_task_dicts table=%s error_type=%s message=%s duration_ms=%d",
+            table_name,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -153,8 +158,11 @@ def update_task_done(
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:update_task_done task_id={task_id} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:update_task_done task_id=%s error_type=%s message=%s duration_ms=%d",
+            task_id,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -186,8 +194,11 @@ def get_task_dict(table_name: str, task_id: str) -> Optional[Dict]:
         return result
     except Exception as exc:
         logger.error(
-            f"ERROR:get_task_dict task_id={task_id} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_task_dict task_id=%s error_type=%s message=%s duration_ms=%d",
+            task_id,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -229,8 +240,11 @@ def get_last_mileage_entry(table_name: str) -> Dict:
         return entry
     except Exception as exc:
         logger.error(
-            f"ERROR:get_last_mileage_entry table={table_name} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:get_last_mileage_entry table=%s error_type=%s message=%s duration_ms=%d",
+            table_name,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -258,8 +272,12 @@ def add_mileage_entry(table_name: str, km: int, entry_date: date) -> None:
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:add_mileage_entry km={km} date={entry_date} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:add_mileage_entry km=%s date=%s error_type=%s message=%s duration_ms=%d",
+            km,
+            entry_date,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise
 
@@ -310,7 +328,10 @@ def append_maintenance_log(
         )
     except Exception as exc:
         logger.error(
-            f"ERROR:append_maintenance_log task={task_name!r} error={exc} "
-            f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
+            "ERROR:append_maintenance_log task=%r error_type=%s message=%s duration_ms=%d",
+            task_name,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
         )
         raise

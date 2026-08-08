@@ -67,7 +67,7 @@ async def api_get_mileage(request: Request) -> Dict:
     logger.info("BEGIN:get_mileage")
     try:
         cfg = get_config()
-        last = get_last_reading()
+        last = await get_last_reading()
         last_km: int = last["km"]
         last_date = date.fromisoformat(last["date"])
         today = date.today()
@@ -87,7 +87,12 @@ async def api_get_mileage(request: Request) -> Dict:
             "estimated_km": estimated_km,
         }
     except Exception as exc:
-        logger.error(f"ERROR:get_mileage error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:get_mileage error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Failed to retrieve mileage data")
     finally:
         logger.info(f"END:get_mileage duration_ms={int((time.monotonic() - start_ms) * 1000)}")
@@ -108,11 +113,16 @@ async def api_post_mileage(request: Request, body: AddMileageBody) -> Dict:
     logger.info(f"BEGIN:post_mileage km={body.km} date={body.date}")
     try:
         reading_date = date.fromisoformat(body.date)  # guaranteed valid by Pydantic
-        add_manual_reading(km=body.km, reading_date=reading_date)
+        await add_manual_reading(km=body.km, reading_date=reading_date)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
-        logger.error(f"ERROR:post_mileage error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:post_mileage error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Failed to save mileage reading")
     finally:
         logger.info(f"END:post_mileage duration_ms={int((time.monotonic() - start_ms) * 1000)}")
@@ -120,7 +130,7 @@ async def api_post_mileage(request: Request, body: AddMileageBody) -> Dict:
     # Return updated summary
     try:
         cfg = get_config()
-        last = get_last_reading()
+        last = await get_last_reading()
         last_km: int = last["km"]
         last_date = date.fromisoformat(last["date"])
         today = date.today()
@@ -140,5 +150,9 @@ async def api_post_mileage(request: Request, body: AddMileageBody) -> Dict:
             "estimated_km": estimated_km,
         }
     except Exception as exc:
-        logger.error(f"ERROR:post_mileage refresh error={exc}")
+        logger.error(
+            "ERROR:post_mileage refresh error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise HTTPException(status_code=500, detail="Reading saved but failed to return updated data")

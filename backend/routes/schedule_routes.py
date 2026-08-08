@@ -4,6 +4,7 @@ Thin route handlers for maintenance task operations. All business logic
 is delegated to schedule_service and related services.
 """
 
+import asyncio
 import logging
 import time
 from datetime import date
@@ -71,11 +72,16 @@ async def api_get_schedule(request: Request) -> List[TaskResult]:
     logger.info("BEGIN:get_schedule")
     try:
         cfg = get_config()
-        current_km = get_current_km()
+        current_km = await get_current_km()
         today = date.today()
-        return get_all_tasks(current_km, today, cfg)
+        return await get_all_tasks(current_km, today, cfg)
     except Exception as exc:
-        logger.error(f"ERROR:get_schedule error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:get_schedule error_type=%s message=%s duration_ms=%d",
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Failed to retrieve schedule")
     finally:
         logger.info(f"END:get_schedule duration_ms={int((time.monotonic() - start_ms) * 1000)}")
@@ -102,11 +108,17 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
     logger.info(f"BEGIN:complete_task task_id={task_id} done_km={body.done_km} done_date={body.done_date}")
     try:
         cfg = get_config()
-        mark_task_done(cfg.airtable.tasks_table, task_id, body.done_km, done_date)
+        await mark_task_done(cfg.airtable.tasks_table, task_id, body.done_km, done_date)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
-        logger.error(f"ERROR:complete_task task_id={task_id} error={exc} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
+        logger.error(
+            "ERROR:complete_task task_id=%s error_type=%s message=%s duration_ms=%d",
+            task_id,
+            type(exc).__name__,
+            str(exc)[:200],
+            int((time.monotonic() - start_ms) * 1000),
+        )
         raise HTTPException(status_code=500, detail="Failed to mark task as done")
     finally:
         logger.info(f"END:complete_task task_id={task_id} duration_ms={int((time.monotonic() - start_ms) * 1000)}")
@@ -114,11 +126,12 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
     # Append to Maintenance Log (non-critical — failures are swallowed here)
     try:
         cfg = get_config()
-        result_before_log = get_one_task_result(
+        result_before_log = await get_one_task_result(
             cfg.airtable.tasks_table, task_id, body.done_km, done_date, cfg
         )
         task_name = result_before_log.name if result_before_log else task_id
-        append_maintenance_log(
+        await asyncio.to_thread(
+            append_maintenance_log,
             table_name=cfg.airtable.maintenance_log_table,
             task_name=task_name,
             done_km=body.done_km,
@@ -126,13 +139,17 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
             notes=body.notes,
         )
     except Exception as exc:
-        logger.error(f"ERROR:complete_task maintenance_log error={exc}")
+        logger.error(
+            "ERROR:complete_task maintenance_log error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
 
     # Return updated task with recomputed status
     try:
         cfg = get_config()
-        current_km = get_current_km()
-        result = get_one_task_result(
+        current_km = await get_current_km()
+        result = await get_one_task_result(
             cfg.airtable.tasks_table, task_id, current_km, date.today(), cfg
         )
         if result is None:
@@ -141,5 +158,9 @@ async def api_post_complete_task(request: Request, task_id: str, body: CompleteT
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"ERROR:complete_task recompute error={exc}")
+        logger.error(
+            "ERROR:complete_task recompute error_type=%s message=%s",
+            type(exc).__name__,
+            str(exc)[:200],
+        )
         raise HTTPException(status_code=500, detail="Task updated but failed to return result")
