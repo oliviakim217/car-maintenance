@@ -6,16 +6,11 @@ Orchestrates image validation and odometer extraction via vision_service.
 import logging
 
 from backend.config.config_loader import AppConfig
+from backend.constants import IMAGE_MAGIC_SIGNATURES
 from backend.modules.dashboard_scan.models import OdometerScanResult
 from backend.services.vision_service import extract_odometer_from_image
 
 logger = logging.getLogger(__name__)
-
-_MAGIC_SIGNATURES: dict[str, list[bytes]] = {
-    "image/jpeg": [b"\xff\xd8\xff"],
-    "image/png":  [b"\x89PNG\r\n\x1a\n"],
-    "image/webp": [b"RIFF"],
-}
 
 
 def _has_valid_magic_bytes(image_bytes: bytes, media_type: str) -> bool:
@@ -23,8 +18,8 @@ def _has_valid_magic_bytes(image_bytes: bytes, media_type: str) -> bool:
     if media_type == "image/heic":
         # HEIC: 4-byte box size + b"ftyp" at offset 4
         return len(image_bytes) >= 12 and image_bytes[4:8] == b"ftyp"
-    signatures = _MAGIC_SIGNATURES.get(media_type, [])
-    return any(image_bytes.startswith(sig) for sig in signatures)
+    signatures = IMAGE_MAGIC_SIGNATURES.get(media_type, [])
+    return any(image_bytes.startswith(signature) for signature in signatures)
 
 
 async def scan_dashboard_image(
@@ -48,10 +43,10 @@ async def scan_dashboard_image(
     """
     cfg_scan = cfg.dashboard_scan
 
-    size_mb = len(image_bytes) / (1024 * 1024)
-    if size_mb > cfg_scan.max_image_size_mb:
+    image_size_mb = len(image_bytes) / (1024 * 1024)
+    if image_size_mb > cfg_scan.max_image_size_mb:
         raise ValueError(
-            f"Image too large: {size_mb:.1f} MB (max {cfg_scan.max_image_size_mb} MB)"
+            f"Image too large: {image_size_mb:.1f} MB (max {cfg_scan.max_image_size_mb} MB)"
         )
 
     if media_type not in cfg_scan.allowed_types:

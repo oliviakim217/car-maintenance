@@ -10,7 +10,7 @@ import time
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 
 from backend.config.config_loader import get_config
-from backend.modules.dashboard_scan.dashboard_service import scan_dashboard_image
+from backend.modules.dashboard_scan.dashboard_scan_service import scan_dashboard_image
 from backend.modules.dashboard_scan.models import OdometerScanResult
 from backend.utils.auth import require_session
 from backend.utils.limiter import limiter
