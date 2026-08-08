@@ -47,12 +47,12 @@ async def api_upload_dashboard_photo(
         if len(image_bytes) == max_read_bytes:
             raise ValueError(f"Image too large (max {cfg.dashboard_scan.max_image_size_mb} MB)")
         media_type = file.content_type or "application/octet-stream"
-        result = await scan_dashboard_image(
+        odometer_scan_result = await scan_dashboard_image(
             image_bytes=image_bytes,
             media_type=media_type,
             cfg=cfg,
         )
-        return result
+        return odometer_scan_result
     except ValueError as exc:
         logger.error(
             "ERROR:api_upload_dashboard_photo error_type=ValueError message=%s duration_ms=%d",
