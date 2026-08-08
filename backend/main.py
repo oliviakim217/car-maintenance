@@ -75,6 +75,7 @@ from backend.config.config_loader import get_config  # noqa: E402
 from backend.constants import PROJECT_ROOT_PATH  # noqa: E402
 from backend.routes.auth_routes import router as auth_router  # noqa: E402
 from backend.routes.dashboard_routes import router as dashboard_router  # noqa: E402
+from backend.routes.manual_qa_routes import router as manual_qa_router  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
 from backend.utils.env_utils import get_required_app_env  # noqa: E402
@@ -192,6 +193,7 @@ app.include_router(auth_router)
 app.include_router(schedule_router)
 app.include_router(mileage_router)
 app.include_router(dashboard_router)
+app.include_router(manual_qa_router)
 
 
 # ---------------------------------------------------------------------------
