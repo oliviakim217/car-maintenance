@@ -117,9 +117,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # ---------------------------------------------------------------------------
 
 _app_env = os.getenv("APP_ENV", "dev")
-_secret_key = os.getenv("SECRET_KEY")
-if not _secret_key:
-    raise RuntimeError("SECRET_KEY is not set in the environment")
+_app_secret_key = os.getenv("APP_SECRET_KEY")
+if not _app_secret_key:
+    raise RuntimeError("APP_SECRET_KEY is not set in the environment")
 
 class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -146,7 +146,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(_SecurityHeadersMiddleware)
 app.add_middleware(
     SessionMiddleware,
-    secret_key=_secret_key,
+    secret_key=_app_secret_key,
     same_site="lax",
     https_only=_app_env == "prod",
 )
