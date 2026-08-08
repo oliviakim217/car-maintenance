@@ -36,7 +36,7 @@ def _resolve_next_due_date(last_done_date_str: str, interval_months: int) -> dat
     return last + relativedelta(months=interval_months)
 
 
-def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> TaskResult:
+def _compute_task_status(task: Dict, current_km: int, current_date: date, cfg) -> TaskResult:
     """Compute scheduling status for a single maintenance task.
 
     Derives next_due_km and/or next_due_date from the task's interval fields,
@@ -81,20 +81,20 @@ def compute_status(task: Dict, current_km: int, current_date: date, cfg) -> Task
         days_remaining = (next_due_date - current_date).days
 
     # Determine status — overdue takes priority over due_soon
-    km_overdue = next_due_km is not None and current_km >= next_due_km
-    date_overdue = next_due_date is not None and current_date >= next_due_date
+    is_km_overdue = next_due_km is not None and current_km >= next_due_km
+    is_date_overdue = next_due_date is not None and current_date >= next_due_date
 
-    if km_overdue or date_overdue:
+    if is_km_overdue or is_date_overdue:
         status = TaskStatus.overdue
     elif is_never_done:
         status = TaskStatus.never_done
     else:
-        buf_km = cfg.mileage.due_soon_buffer_km
-        buf_days = cfg.mileage.due_soon_buffer_days
-        km_due_soon = km_remaining is not None and km_remaining <= buf_km
-        days_due_soon = days_remaining is not None and days_remaining <= buf_days
+        cfg_due_soon_buffer_km = cfg.mileage.due_soon_buffer_km
+        cfg_due_soon_buffer_days = cfg.mileage.due_soon_buffer_days
+        is_km_due_soon = km_remaining is not None and km_remaining <= cfg_due_soon_buffer_km
+        is_days_due_soon = days_remaining is not None and days_remaining <= cfg_due_soon_buffer_days
 
-        if km_due_soon or days_due_soon:
+        if is_km_due_soon or is_days_due_soon:
             status = TaskStatus.due_soon
         else:
             status = TaskStatus.ok
@@ -129,7 +129,9 @@ def get_all_tasks(current_km: int, current_date: date, cfg) -> List[TaskResult]:
     logger.info(f"BEGIN:get_all_tasks current_km={current_km} current_date={current_date}")
     try:
         tasks = get_all_task_dicts(cfg.airtable.tasks_table)
-        results = [compute_status(t, current_km, current_date, cfg) for t in tasks]
+        results = [
+            _compute_task_status(task_dict, current_km, current_date, cfg) for task_dict in tasks
+        ]
         logger.info(
             f"END:get_all_tasks count={len(results)} "
             f"duration_ms={int((time.monotonic() - start_ms) * 1000)}"
@@ -194,4 +196,4 @@ def get_one_task_result(
     task = get_task_dict(table_name, task_id)
     if task is None:
         return None
-    return compute_status(task, current_km, current_date, cfg)
+    return _compute_task_status(task, current_km, current_date, cfg)
