@@ -43,9 +43,9 @@ class _SecretScrubFilter(logging.Filter):
 
     _PATTERNS = [
         re.compile(r"Bearer\s+\S+", re.IGNORECASE),
-        re.compile(r"pat[A-Z0-9]{14,}"),
-        re.compile(r"(Authorization\s*[:=]\s*)\S+", re.IGNORECASE),
-        re.compile(r"(password\s*[:=]\s*)\S+", re.IGNORECASE),
+        re.compile(r"pat[A-Za-z0-9]{14,}(?:\.[A-Za-z0-9]+)?"),
+        re.compile(r'Authorization["\']?\s*[:=]\s*["\']?.+', re.IGNORECASE),
+        re.compile(r'password["\']?\s*[:=]\s*["\']?.+', re.IGNORECASE),
     ]
     _REPLACEMENT = "[REDACTED]"
 
@@ -61,8 +61,11 @@ class _SecretScrubFilter(logging.Filter):
         return text
 
 
+_secret_scrub_filter = _SecretScrubFilter()
 for _handler in logging.root.handlers:
-    _handler.addFilter(_SecretScrubFilter())
+    _handler.addFilter(_secret_scrub_filter)
+for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+    logging.getLogger(_uvicorn_logger_name).addFilter(_secret_scrub_filter)
 
 # ---------------------------------------------------------------------------
 # Application imports (after dotenv + logging are initialised)
