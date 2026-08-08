@@ -186,7 +186,7 @@ main {
 /* inline update form */
 #odometer-form-wrapper { margin-top: 14px; }
 #odometer-actions-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-#update-odometer-group { display: flex; flex-direction: column; gap: 2px; }
+#update-odometer-group { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 #photo-mobile-hint { font-size: .7rem; color: #64748b; }
 #photo-input { display: none; }
 #photo-confirm-panel {
