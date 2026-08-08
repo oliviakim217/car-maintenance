@@ -61,6 +61,7 @@ class RateLimitingConfig(BaseModel):
     write_requests_per_minute: int
     read_requests_per_minute: int
     login_requests_per_minute: int
+    manual_qa_requests_per_minute: int
 
 
 class DashboardScanConfig(BaseModel):
@@ -70,6 +71,14 @@ class DashboardScanConfig(BaseModel):
     allowed_types: list[str]
     min_km_plausible: int
     max_km_plausible: int
+    model: str
+
+
+class ManualQaConfig(BaseModel):
+    """Owner's manual RAG Q&A settings."""
+
+    embedding_model: str
+    top_k_chunks: int
     model: str
 
 
@@ -83,6 +92,7 @@ class AppConfig(BaseModel):
     logging: LoggingConfig
     rate_limiting: RateLimitingConfig
     dashboard_scan: DashboardScanConfig
+    manual_qa: ManualQaConfig
 
 
 # ---------------------------------------------------------------------------
