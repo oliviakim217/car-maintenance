@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _get_api() -> Api:
+def _get_airtable_client() -> Api:
     """Build and return an authenticated Airtable API client.
 
     Raises:
@@ -68,9 +68,9 @@ def _resolve_base_id() -> str:
 
 def _get_table(table_name: str):
     """Return a pyairtable Table object for the given table name."""
-    api = _get_api()
+    airtable_client = _get_airtable_client()
     base_id = _resolve_base_id()
-    return api.table(base_id, table_name)
+    return airtable_client.table(base_id, table_name)
 
 
 # ---------------------------------------------------------------------------
