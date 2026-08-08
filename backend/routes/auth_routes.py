@@ -22,15 +22,15 @@ class LoginBody(BaseModel):
 
 @router.post("/login")
 @limiter.limit("5/minute")
-async def login(request: Request, body: LoginBody) -> dict:
+async def api_post_login(request: Request, body: LoginBody) -> dict:
     """Verify password and create an authenticated session."""
     start_ms = time.monotonic()
     logger.info("BEGIN:login")
     try:
-        expected = os.getenv("APP_PASSWORD")
-        if not expected:
+        app_password = os.getenv("APP_PASSWORD")
+        if not app_password:
             raise RuntimeError("APP_PASSWORD is not set in the environment")
-        if not hmac.compare_digest(body.password, expected):
+        if not hmac.compare_digest(body.password, app_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect password",
@@ -47,14 +47,14 @@ async def login(request: Request, body: LoginBody) -> dict:
 
 
 @router.post("/logout")
-async def logout(request: Request) -> dict:
+async def api_post_logout(request: Request) -> dict:
     """Clear the session."""
     request.session.clear()
     return {"status": "ok"}
 
 
 @router.get("/api/status")
-async def session_status(request: Request) -> dict:
+async def api_get_session_status(request: Request) -> dict:
     """Return 200 if the session is authenticated, 401 otherwise.
 
     Used by the frontend on page load to decide whether to show the

@@ -8,7 +8,6 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import AsyncGenerator
 
 import uvicorn
@@ -42,6 +41,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 from backend.config.config_loader import get_config  # noqa: E402
+from backend.constants import PROJECT_ROOT_PATH  # noqa: E402
 from backend.routes.auth_routes import router as auth_router  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
@@ -51,8 +51,7 @@ from backend.utils.limiter import limiter  # noqa: E402
 # Templates
 # ---------------------------------------------------------------------------
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-templates = Jinja2Templates(directory=str(_PROJECT_ROOT / "frontend" / "templates"))
+templates = Jinja2Templates(directory=str(PROJECT_ROOT_PATH / "frontend" / "templates"))
 
 
 # ---------------------------------------------------------------------------
@@ -88,9 +87,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # ---------------------------------------------------------------------------
 
 _app_env = os.getenv("APP_ENV", "dev")
-_secret_key = os.getenv("SECRET_KEY")
-if not _secret_key:
-    raise RuntimeError("SECRET_KEY is not set in the environment")
+_app_secret_key = os.getenv("APP_SECRET_KEY")
+if not _app_secret_key:
+    raise RuntimeError("APP_SECRET_KEY is not set in the environment")
 
 class _SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -117,13 +116,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(_SecurityHeadersMiddleware)
 app.add_middleware(
     SessionMiddleware,
-    secret_key=_secret_key,
+    secret_key=_app_secret_key,
     same_site="lax",
     https_only=_app_env == "prod",
 )
 
 # Serve static files (CSS, JS, images)
-app.mount("/static", StaticFiles(directory=str(_PROJECT_ROOT / "frontend" / "static")), name="static")
+app.mount("/static", StaticFiles(directory=str(PROJECT_ROOT_PATH / "frontend" / "static")), name="static")
 
 # Mount routers
 app.include_router(auth_router)
@@ -137,7 +136,7 @@ app.include_router(mileage_router)
 
 
 @app.get("/health", include_in_schema=False)
-async def health() -> dict:
+async def api_get_health() -> dict:
     return {"status": "ok"}
 
 
@@ -147,7 +146,7 @@ async def health() -> dict:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def serve_dashboard(request: Request) -> HTMLResponse:
+async def api_get_dashboard_page(request: Request) -> HTMLResponse:
     """Serve the main dashboard HTML template.
 
     Args:

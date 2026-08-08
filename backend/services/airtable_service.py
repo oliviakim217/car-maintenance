@@ -40,16 +40,16 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _get_api() -> Api:
+def _get_airtable_client() -> Api:
     """Build and return an authenticated Airtable API client.
 
     Raises:
         RuntimeError: If AIRTABLE_TOKEN is not set.
     """
-    token = os.getenv("AIRTABLE_TOKEN")
-    if not token:
+    airtable_token = os.getenv("AIRTABLE_TOKEN")
+    if not airtable_token:
         raise RuntimeError("AIRTABLE_TOKEN environment variable is not set")
-    return Api(token)
+    return Api(airtable_token)
 
 
 def _resolve_base_id() -> str:
@@ -60,17 +60,17 @@ def _resolve_base_id() -> str:
     """
     app_env = os.getenv("APP_ENV", "dev")
     env_key = f"AIRTABLE_BASE_ID_{app_env.upper()}"
-    base_id = os.getenv(env_key)
-    if not base_id:
+    airtable_base_id = os.getenv(env_key)
+    if not airtable_base_id:
         raise RuntimeError(f"{env_key} environment variable is not set")
-    return base_id
+    return airtable_base_id
 
 
 def _get_table(table_name: str):
     """Return a pyairtable Table object for the given table name."""
-    api = _get_api()
-    base_id = _resolve_base_id()
-    return api.table(base_id, table_name)
+    airtable_client = _get_airtable_client()
+    airtable_base_id = _resolve_base_id()
+    return airtable_client.table(airtable_base_id, table_name)
 
 
 # ---------------------------------------------------------------------------

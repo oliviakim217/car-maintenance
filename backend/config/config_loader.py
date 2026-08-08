@@ -7,11 +7,12 @@ typed Pydantic model. Implements a singleton so the file is read only once.
 import logging
 import os
 from functools import lru_cache
-from pathlib import Path
 from typing import Optional
 
 import yaml
 from pydantic import BaseModel
+
+from backend.constants import PROJECT_ROOT_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -76,9 +77,6 @@ class AppConfig(BaseModel):
 # Loader
 # ---------------------------------------------------------------------------
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
 @lru_cache(maxsize=1)
 def get_config() -> AppConfig:
     """Load and return the application config as a singleton.
@@ -94,7 +92,7 @@ def get_config() -> AppConfig:
         ValueError: If the YAML content fails Pydantic validation.
     """
     app_env = os.getenv("APP_ENV", "dev")
-    config_path = _PROJECT_ROOT / "configs" / app_env / "config.yaml"
+    config_path = PROJECT_ROOT_PATH / "configs" / app_env / "config.yaml"
 
     logger.info(f"BEGIN:load_config env={app_env} path={config_path}")
 
