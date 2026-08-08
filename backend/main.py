@@ -6,6 +6,7 @@ starts uvicorn on port 8000 when executed directly.
 
 import logging
 import os
+import re
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -37,12 +38,40 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+class _SecretScrubFilter(logging.Filter):
+    """Scrub known secret patterns from every log record before emission."""
+
+    _PATTERNS = [
+        re.compile(r"Bearer\s+\S+", re.IGNORECASE),
+        re.compile(r"pat[A-Z0-9]{14,}"),
+        re.compile(r"(Authorization\s*[:=]\s*)\S+", re.IGNORECASE),
+        re.compile(r"(password\s*[:=]\s*)\S+", re.IGNORECASE),
+    ]
+    _REPLACEMENT = "[REDACTED]"
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = self._scrub(str(record.msg))
+        if record.args:
+            record.args = tuple(self._scrub(str(a)) for a in record.args)
+        return True
+
+    def _scrub(self, text: str) -> str:
+        for pattern in self._PATTERNS:
+            text = pattern.sub(self._REPLACEMENT, text)
+        return text
+
+
+for _handler in logging.root.handlers:
+    _handler.addFilter(_SecretScrubFilter())
+
 # ---------------------------------------------------------------------------
 # Application imports (after dotenv + logging are initialised)
 # ---------------------------------------------------------------------------
 
 from backend.config.config_loader import get_config  # noqa: E402
 from backend.routes.auth_routes import router as auth_router  # noqa: E402
+from backend.routes.dashboard_routes import router as dashboard_router  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
 from backend.utils.limiter import limiter  # noqa: E402
@@ -129,6 +158,7 @@ app.mount("/static", StaticFiles(directory=str(_PROJECT_ROOT / "frontend" / "sta
 app.include_router(auth_router)
 app.include_router(schedule_router)
 app.include_router(mileage_router)
+app.include_router(dashboard_router)
 
 
 # ---------------------------------------------------------------------------

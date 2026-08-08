@@ -61,6 +61,16 @@ class RateLimitingConfig(BaseModel):
     read_requests_per_minute: int
 
 
+class DashboardScanConfig(BaseModel):
+    """Dashboard photo scan settings."""
+
+    max_image_size_mb: float
+    allowed_types: list[str]
+    min_km_plausible: int
+    max_km_plausible: int
+    model: str
+
+
 class AppConfig(BaseModel):
     """Root application configuration model."""
 
@@ -70,6 +80,7 @@ class AppConfig(BaseModel):
     airtable: AirtableConfig
     logging: LoggingConfig
     rate_limiting: RateLimitingConfig
+    dashboard_scan: DashboardScanConfig
 
 
 # ---------------------------------------------------------------------------
