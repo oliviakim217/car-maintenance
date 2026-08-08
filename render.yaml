@@ -17,7 +17,7 @@ services:
         value: INFO
 
       # Set these manually in the Render dashboard (Environment tab) — never committed to git
-      - key: SECRET_KEY
+      - key: APP_SECRET_KEY
         sync: false
       - key: APP_PASSWORD
         sync: false
