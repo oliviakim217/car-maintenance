@@ -77,6 +77,7 @@ from backend.routes.auth_routes import router as auth_router  # noqa: E402
 from backend.routes.dashboard_routes import router as dashboard_router  # noqa: E402
 from backend.routes.mileage_routes import router as mileage_router  # noqa: E402
 from backend.routes.schedule_routes import router as schedule_router  # noqa: E402
+from backend.utils.env_utils import get_required_app_env  # noqa: E402
 from backend.utils.limiter import limiter  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -120,7 +121,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # FastAPI app
 # ---------------------------------------------------------------------------
 
-_app_env = os.getenv("APP_ENV", "dev")
+_app_env = get_required_app_env()
 _app_secret_key = os.getenv("APP_SECRET_KEY")
 if not _app_secret_key:
     raise RuntimeError("APP_SECRET_KEY is not set in the environment")

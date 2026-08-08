@@ -32,6 +32,8 @@ from typing import Dict, List, Optional
 from pyairtable import Api
 from pyairtable.formulas import match
 
+from backend.utils.env_utils import get_required_app_env
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +60,7 @@ def _resolve_base_id() -> str:
     Raises:
         RuntimeError: If the required env var is not set.
     """
-    app_env = os.getenv("APP_ENV", "dev")
+    app_env = get_required_app_env()
     env_key = f"AIRTABLE_BASE_ID_{app_env.upper()}"
     airtable_base_id = os.getenv(env_key)
     if not airtable_base_id:
