@@ -18,6 +18,14 @@ def _has_valid_magic_bytes(image_bytes: bytes, media_type: str) -> bool:
     if media_type == "image/heic":
         # HEIC: 4-byte box size + b"ftyp" at offset 4
         return len(image_bytes) >= 12 and image_bytes[4:8] == b"ftyp"
+    if media_type == "image/webp":
+        # WebP: "RIFF" container header, then "WEBP" at offset 8. Checking
+        # "RIFF" alone would also accept other RIFF-based formats (WAV, AVI).
+        return (
+            len(image_bytes) >= 12
+            and image_bytes[0:4] == b"RIFF"
+            and image_bytes[8:12] == b"WEBP"
+        )
     signatures = IMAGE_MAGIC_SIGNATURES.get(media_type, [])
     return any(image_bytes.startswith(signature) for signature in signatures)
 
