@@ -1,0 +1,568 @@
+/* ─────────────────────────────────────────────────────────────
+   Helpers
+───────────────────────────────────────────────────────────── */
+const TODAY = new Date().toISOString().slice(0, 10);
+
+function $(id) { return document.getElementById(id); }
+
+function fmtKm(val) {
+  if (val == null) return null;
+  return Number(val).toLocaleString();
+}
+
+function fmtDate(val) {
+  if (!val) return null;
+  // val may be "YYYY-MM-DD" or ISO string
+  const d = val.slice(0, 10);
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3500);
+}
+
+/* ── Error banner ───────────────────────────────────────────── */
+function showError(msg) {
+  const b = $('error-banner');
+  b.textContent = msg;
+  b.classList.add('show');
+}
+function clearError() {
+  $('error-banner').classList.remove('show');
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+function setLoading(on) {
+  $('spinner-overlay').classList.toggle('active', on);
+}
+
+/* ── Auth helpers ───────────────────────────────────────────── */
+function showLoginOverlay(errorMsg = '') {
+  $('login-overlay').classList.add('active');
+  $('signout-btn').style.display = 'none';
+  $('login-error').textContent = errorMsg;
+  $('api-key-input').value = '';
+  setTimeout(() => $('api-key-input').focus(), 50);
+}
+
+function hideLoginOverlay() {
+  $('login-overlay').classList.remove('active');
+  $('signout-btn').style.display = '';
+}
+
+async function signOut() {
+  await fetch('/logout', { method: 'POST' });
+  showLoginOverlay();
+}
+$('signout-btn').addEventListener('click', signOut);
+// signout-btn has no default display in CSS, so hide it synchronously here —
+// otherwise it would flash visible until the async session check in
+// DOMContentLoaded resolves and calls showLoginOverlay()/hideLoginOverlay().
+$('signout-btn').style.display = 'none';
+
+$('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const password = $('api-key-input').value.trim();
+  if (!password) return;
+  const btn = $('login-form').querySelector('button[type=submit]');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (res.status === 401) {
+      $('login-error').textContent = 'Incorrect password. Try again.';
+      $('api-key-input').value = '';
+      $('api-key-input').focus();
+      return;
+    }
+    if (!res.ok) {
+      $('login-error').textContent = 'Something went wrong. Try again.';
+      return;
+    }
+    hideLoginOverlay();
+    loadAll();
+  } catch (_) {
+    $('login-error').textContent = 'Could not reach the server.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+});
+
+/* ── API helpers ────────────────────────────────────────────── */
+async function apiFetch(url, options = {}) {
+  // Session cookie is sent automatically by the browser — no manual token needed
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (res.status === 401) {
+    showLoginOverlay('Session expired. Please sign in again.');
+    throw new Error('Unauthorized');
+  }
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try { const j = await res.json(); detail = j.detail || j.message || detail; } catch (_) {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Mileage
+───────────────────────────────────────────────────────────── */
+function renderMileage(data) {
+  const currentKm  = data.current_km  ?? data.estimated_km ?? null;
+  const lastKm     = data.last_reading_km   ?? null;
+  const lastDate   = data.last_reading_date ?? null;
+  const estAdded   = data.estimated_km != null && lastKm != null
+    ? data.estimated_km - lastKm
+    : null;
+
+  // Current km
+  const cur = $('stat-current-km');
+  cur.innerHTML = currentKm != null
+    ? `${fmtKm(currentKm)}<span class="unit"> km</span>`
+    : `—`;
+
+  // Last reading
+  const lk = $('stat-last-km');
+  lk.innerHTML = lastKm != null
+    ? `${fmtKm(lastKm)}<span class="unit"> km</span>`
+    : `—`;
+  $('stat-last-date').textContent = lastDate ? fmtDate(lastDate) : '';
+
+  // Estimated added
+  const ea = $('stat-estimated-km');
+  ea.innerHTML = estAdded != null && estAdded >= 0
+    ? `+${fmtKm(Math.round(estAdded))}<span class="unit"> km</span>`
+    : `—`;
+
+  // Pre-fill odometer form
+  if (currentKm) $('odo-km').value = Math.round(currentKm);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Badge helper
+───────────────────────────────────────────────────────────── */
+function categoryBadge(cat) {
+  const c = (cat || 'general').toLowerCase().replace(/[^a-z]/g, '');
+  return `<span class="badge badge-${c}">${escapeHtml(cat || 'general')}</span>`;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Escape HTML
+───────────────────────────────────────────────────────────── */
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Estimated days until due — uses whichever is sooner:
+   calendar days_remaining or km_remaining converted to days.
+   KM_PER_DAY is a rough average used only for sorting/bucketing.
+───────────────────────────────────────────────────────────── */
+const KM_PER_DAY = 20;
+
+// Returns estimated days until due — whichever trigger (km or date) comes first.
+function daysUntilDue(task) {
+  if (task.status === 'overdue') return -Infinity;
+  const byDate = task.days_remaining ?? Infinity;
+  const byKm   = task.km_remaining != null
+    ? Math.round(task.km_remaining / KM_PER_DAY)
+    : Infinity;
+  return Math.min(byDate, byKm);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Time bucket (0 = <3 months, 1 = 3-6 months, 2 = >6 months)
+───────────────────────────────────────────────────────────── */
+function getTimeBucket(task) {
+  const days = daysUntilDue(task);
+  if (days <= 90)  return 0;
+  if (days <= 180) return 1;
+  return 2;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Sort tasks by whichever due trigger (km or date) comes first
+───────────────────────────────────────────────────────────── */
+function sortTasks(tasks) {
+  return [...tasks].sort((a, b) => daysUntilDue(a) - daysUntilDue(b));
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Checkmark for the active bucket cell
+───────────────────────────────────────────────────────────── */
+function buildDueCell() {
+  return `<span class="checkmark">&#10003;</span>`;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Build a table row for one task
+───────────────────────────────────────────────────────────── */
+function buildTaskRow(task, currentKm) {
+  const safeId    = escapeHtml(task.task_id);
+  const bucket    = getTimeBucket(task);
+  const prefillKm = currentKm ? Math.round(currentKm) : '';
+  const cells     = ['', '', ''];
+  cells[bucket]   = buildDueCell(task);
+
+  return `
+    <tr class="task-row status-${escapeHtml(task.status)}" id="task-row-${safeId}">
+      <td class="col-task">
+        <div class="task-name-wrap">
+          <span class="task-name">${escapeHtml(task.name)}</span>
+          ${categoryBadge(task.category)}
+          <button class="collapse-btn" id="collapse-btn-${safeId}"
+                  data-action="toggle-detail" data-task-id="${safeId}" title="Show details">▾</button>
+        </div>
+        <div class="task-interval">
+          ${task.interval_km ? `Every ${fmtKm(task.interval_km)} km` : ''}${task.interval_km && task.interval_months ? ' &nbsp;·&nbsp; ' : ''}${task.interval_months ? `Every ${task.interval_months} months` : ''}
+        </div>
+        <div class="task-detail" id="task-detail-${safeId}">
+          ${task.notes ? `<div class="task-notes">${escapeHtml(task.notes)}</div>` : ''}
+          <button class="btn btn-primary btn-sm mark-done-btn"
+                  data-action="toggle-mark-done" data-task-id="${safeId}">Mark as Done</button>
+        </div>
+      </td>
+      <td class="col-bucket col-urgent">${cells[0]}</td>
+      <td class="col-bucket col-medium">${cells[1]}</td>
+      <td class="col-bucket col-later">${cells[2]}</td>
+    </tr>
+    <tr class="mark-done-row" id="done-row-${safeId}">
+      <td colspan="4">
+        <form class="mark-done-form open" id="done-form-${safeId}" data-task-id="${safeId}" autocomplete="off">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="done-km-${safeId}">Odometer at Completion</label>
+              <div class="input-with-unit">
+                <input type="number" id="done-km-${safeId}" name="done_km"
+                       min="0" placeholder="e.g. 45000" value="${prefillKm}" required />
+                <span class="input-unit">km</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="done-date-${safeId}">Date Completed</label>
+              <input type="date" id="done-date-${safeId}" name="done_date"
+                     value="${TODAY}" required />
+            </div>
+            <div class="form-group form-group-wide">
+              <label for="done-notes-${safeId}">Notes (optional)</label>
+              <input type="text" id="done-notes-${safeId}" name="notes"
+                     placeholder="e.g. Used 0W-20 synthetic, brand X" />
+            </div>
+          </div>
+          <div class="form-row">
+            <button type="submit" class="btn btn-success btn-sm">Confirm Done</button>
+            <button type="button" class="btn btn-ghost btn-sm"
+                    data-action="cancel-mark-done" data-task-id="${safeId}">Cancel</button>
+          </div>
+        </form>
+      </td>
+    </tr>
+  `;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Render task table
+───────────────────────────────────────────────────────────── */
+function renderTasks(tasks, currentKm) {
+  const sorted = sortTasks(tasks);
+  const rows   = sorted.map(t => buildTaskRow(t, currentKm)).join('');
+
+  $('tasks-container').innerHTML = `
+    <table class="task-table">
+      <caption class="table-caption">Maintenance schedule — checkmark shows when each item is due</caption>
+      <thead>
+        <tr>
+          <th class="col-task">Type of Work</th>
+          <th class="col-bucket col-urgent">&lt; 3 months</th>
+          <th class="col-bucket col-medium">3–6 months</th>
+          <th class="col-bucket col-later">&gt; 6 months</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Toggle task detail panel (notes + mark-done button)
+───────────────────────────────────────────────────────────── */
+function toggleTaskDetail(taskId) {
+  const detail = document.getElementById(`task-detail-${taskId}`);
+  const btn    = document.getElementById(`collapse-btn-${taskId}`);
+  if (!detail) return;
+  const opening = !detail.classList.contains('open');
+  detail.classList.toggle('open', opening);
+  btn.classList.toggle('open', opening);
+  // Close the mark-done form if collapsing
+  if (!opening) toggleMarkDone(taskId, true);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Toggle mark-done form row
+───────────────────────────────────────────────────────────── */
+function toggleMarkDone(taskId, forceClose = false) {
+  const row = document.getElementById(`done-row-${taskId}`);
+  if (!row) return;
+  if (forceClose) {
+    row.style.display = 'none';
+  } else {
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Submit: mark task as done
+───────────────────────────────────────────────────────────── */
+async function submitMarkDone(event, taskId) {
+  event.preventDefault();
+  const form = event.target;
+  const doneKm    = parseInt(form.done_km.value, 10);
+  const doneDate  = form.done_date.value;
+  const notes     = form.notes.value.trim();
+
+  if (!doneKm || !doneDate) {
+    showToast('Please fill in km and date.', 'error');
+    return;
+  }
+
+  clearError();
+  setLoading(true);
+  try {
+    await apiFetch(`/api/tasks/${encodeURIComponent(taskId)}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ done_km: doneKm, done_date: doneDate, notes }),
+    });
+    showToast('Task marked as done!', 'success');
+    await loadAll();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+    setLoading(false);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Delegated events for dynamically-rendered task rows
+───────────────────────────────────────────────────────────── */
+$('tasks-container').addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const taskId = target.dataset.taskId;
+  switch (target.dataset.action) {
+    case 'toggle-detail':
+      toggleTaskDetail(taskId);
+      break;
+    case 'toggle-mark-done':
+      toggleMarkDone(taskId);
+      break;
+    case 'cancel-mark-done':
+      toggleMarkDone(taskId, true);
+      break;
+  }
+});
+
+$('tasks-container').addEventListener('submit', (e) => {
+  const form = e.target.closest('.mark-done-form');
+  if (!form) return;
+  submitMarkDone(e, form.dataset.taskId);
+});
+
+/* ─────────────────────────────────────────────────────────────
+   Toggle odometer form
+───────────────────────────────────────────────────────────── */
+$('btn-toggle-odometer').addEventListener('click', () => {
+  $('odometer-form').classList.toggle('open');
+  $('photo-confirm-panel').style.display = 'none';
+});
+$('btn-cancel-odometer').addEventListener('click', () => {
+  $('odometer-form').classList.remove('open');
+});
+
+/* ─────────────────────────────────────────────────────────────
+   Dashboard photo upload
+───────────────────────────────────────────────────────────── */
+let _pendingPhotoKm = null;
+
+$('btn-take-photo').addEventListener('click', () => {
+  $('photo-input').click();
+});
+
+$('photo-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setLoading(true);
+  clearError();
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/dashboard/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    if (res.status === 401) {
+      showLoginOverlay('Session expired. Please sign in again.');
+      return;
+    }
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try { const j = await res.json(); detail = j.detail || detail; } catch (_) {}
+      throw new Error(detail);
+    }
+    const data = await res.json();
+    _pendingPhotoKm = data.extracted_km;
+    $('photo-confirm-msg').textContent = data.message + ' Save this reading?';
+    $('photo-confirm-panel').style.display = '';
+    $('odometer-form').classList.remove('open');
+  } catch (err) {
+    showToast(`Could not read photo: ${err.message}`, 'error');
+  } finally {
+    setLoading(false);
+    e.target.value = '';
+  }
+});
+
+$('btn-photo-save').addEventListener('click', async () => {
+  if (!_pendingPhotoKm) return;
+  setLoading(true);
+  clearError();
+  try {
+    await apiFetch('/api/mileage', {
+      method: 'POST',
+      body: JSON.stringify({ km: _pendingPhotoKm, date: TODAY }),
+    });
+    $('photo-confirm-panel').style.display = 'none';
+    _pendingPhotoKm = null;
+    showToast('Mileage updated from photo!', 'success');
+    await loadAll();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+    setLoading(false);
+  }
+});
+
+$('btn-photo-cancel').addEventListener('click', () => {
+  $('photo-confirm-panel').style.display = 'none';
+  _pendingPhotoKm = null;
+});
+
+/* ─────────────────────────────────────────────────────────────
+   Submit: update odometer
+───────────────────────────────────────────────────────────── */
+$('odometer-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const km   = parseInt($('odo-km').value, 10);
+  const date = $('odo-date').value;
+
+  if (!km || !date) {
+    showToast('Please fill in km and date.', 'error');
+    return;
+  }
+
+  clearError();
+  setLoading(true);
+  try {
+    await apiFetch('/api/mileage', {
+      method: 'POST',
+      body: JSON.stringify({ km, date }),
+    });
+    $('odometer-form').classList.remove('open');
+    showToast('Mileage updated!', 'success');
+    await loadAll();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+    setLoading(false);
+  }
+});
+
+
+/* ─────────────────────────────────────────────────────────────
+   Load all data
+───────────────────────────────────────────────────────────── */
+let _currentKm = null;
+
+async function loadAll() {
+  setLoading(true);
+  clearError();
+  try {
+    const [mileageData, scheduleData] = await Promise.all([
+      apiFetch('/api/mileage'),
+      apiFetch('/api/schedule'),
+    ]);
+
+    _currentKm = mileageData.current_km ?? mileageData.estimated_km ?? null;
+    renderMileage(mileageData);
+    renderTasks(scheduleData, _currentKm);
+  } catch (err) {
+    showError(`Failed to load data: ${err.message}. Is the server running?`);
+  } finally {
+    setLoading(false);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Getting started banner
+───────────────────────────────────────────────────────────── */
+function dismissGettingStarted() {
+  localStorage.setItem('gs_dismissed', '1');
+  $('getting-started').style.display = 'none';
+}
+$('btn-dismiss-getting-started').addEventListener('click', dismissGettingStarted);
+
+/* ─────────────────────────────────────────────────────────────
+   Init
+───────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', async () => {
+  // Hide getting-started banner if previously dismissed
+  if (localStorage.getItem('gs_dismissed')) {
+    $('getting-started').style.display = 'none';
+  }
+
+  // Photo confirm panel starts hidden until a photo scan completes
+  $('photo-confirm-panel').style.display = 'none';
+
+  // Show Take a Photo only on mobile; replace with hint on desktop.
+  // photo-mobile-hint has no default display in CSS, so both branches must
+  // set it explicitly — otherwise it would default to visible on mobile too.
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    $('photo-mobile-hint').style.display = 'none';
+  } else {
+    $('btn-take-photo').style.display = 'none';
+    $('photo-mobile-hint').style.display = '';
+  }
+
+  // Set today as default date on odometer form
+  $('odo-date').value = TODAY;
+
+  // Check session status before showing the dashboard
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      hideLoginOverlay();
+      loadAll();
+    } else {
+      showLoginOverlay();
+    }
+  } catch (_) {
+    showLoginOverlay('Could not reach the server.');
+  }
+});
