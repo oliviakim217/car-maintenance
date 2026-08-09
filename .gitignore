@@ -41,3 +41,5 @@ Thumbs.db
 # Claude Code local settings and auto-generated agent memory
 .claude/settings.local.json
 .claude/agent-memory/
+
+/reference/
