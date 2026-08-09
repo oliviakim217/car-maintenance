@@ -496,6 +496,64 @@ $('odometer-form').addEventListener('submit', async (e) => {
 
 
 /* ─────────────────────────────────────────────────────────────
+   Manual Q&A chat
+───────────────────────────────────────────────────────────── */
+$('manual-qa-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = $('manual-qa-question');
+  const submitBtn = $('manual-qa-submit');
+  const history = $('manual-qa-history');
+
+  const question = input.value.trim();
+  if (!question) return;
+
+  const turn = document.createElement('div');
+  turn.className = 'manual-qa-turn';
+
+  const questionBubble = document.createElement('div');
+  questionBubble.className = 'manual-qa-question';
+  questionBubble.textContent = question;
+  turn.appendChild(questionBubble);
+
+  const answerBubble = document.createElement('div');
+  answerBubble.className = 'manual-qa-answer manual-qa-pending';
+  answerBubble.textContent = 'Thinking…';
+  turn.appendChild(answerBubble);
+
+  history.appendChild(turn);
+  history.scrollTop = history.scrollHeight;
+
+  input.value = '';
+  input.disabled = true;
+  submitBtn.disabled = true;
+
+  try {
+    const data = await apiFetch('/api/manual/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    });
+    answerBubble.classList.remove('manual-qa-pending');
+    answerBubble.textContent = data.answer;
+
+    if (data.source_pages && data.source_pages.length) {
+      const sources = document.createElement('div');
+      sources.className = 'manual-qa-sources';
+      sources.textContent = `Source pages: ${data.source_pages.join(', ')}`;
+      turn.appendChild(sources);
+    }
+  } catch (err) {
+    answerBubble.classList.remove('manual-qa-pending');
+    answerBubble.classList.add('manual-qa-error');
+    answerBubble.textContent = `Error: ${err.message}`;
+  } finally {
+    input.disabled = false;
+    submitBtn.disabled = false;
+    input.focus();
+    history.scrollTop = history.scrollHeight;
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
    Load all data
 ───────────────────────────────────────────────────────────── */
 let _currentKm = null;

@@ -5,6 +5,9 @@
 data/mileage.json
 data/maintenance_log.xlsx
 
+# Generated manual Q&A index (rebuild with scripts/build_manual_index.py)
+data/manual_index/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -38,3 +41,5 @@ Thumbs.db
 # Claude Code local settings and auto-generated agent memory
 .claude/settings.local.json
 .claude/agent-memory/
+
+/reference/

@@ -23,3 +23,20 @@ IMAGE_MAGIC_SIGNATURES: dict[str, list[bytes]] = {
     "image/png":  [b"\x89PNG\r\n\x1a\n"],
     "image/webp": [b"RIFF"],
 }
+
+MANUAL_QA_INDEX_DIR_PATH = PROJECT_ROOT_PATH / "data" / "manual_index"
+MANUAL_QA_CHUNKS_PATH = MANUAL_QA_INDEX_DIR_PATH / "chunks.json"
+MANUAL_QA_EMBEDDINGS_PATH = MANUAL_QA_INDEX_DIR_PATH / "embeddings.npy"
+MANUAL_QA_SOURCE_PDF_PATH = PROJECT_ROOT_PATH / "reference" / "2021_mazda3_manual_en_optimized.pdf"
+
+ANTHROPIC_MAX_TOKENS_MANUAL_QA = 512
+
+ANTHROPIC_MANUAL_QA_SYSTEM_PROMPT = (
+    "You answer questions about a 2021 Mazda 3 using ONLY the owner's manual "
+    "excerpts provided below. Each excerpt is labelled with its page number. "
+    "Cite the page number(s) you used in your answer, e.g. '(p. 42)'. If the "
+    "excerpts do not contain enough information to answer, say so plainly — "
+    "do not guess or use outside knowledge. Respond in plain text only — no "
+    "markdown formatting (no #, *, -, or backticks), since the answer is "
+    "displayed as plain text in a chat UI."
+)
