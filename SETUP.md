@@ -70,7 +70,32 @@ Your Airtable token can be found at airtable.com → Account → Developer Hub �
 
 ---
 
-## 5. Run the App
+## 5. Set Up the Owner's Manual Q&A Index
+
+The "Ask the Owner's Manual" chat feature needs two things that are **not** included when you
+clone or download this repo (they're intentionally excluded from version control):
+
+1. **The manual PDF itself**, which must be placed at:
+   ```
+   reference/2021_mazda3_manual_en_optimized.pdf
+   ```
+   Get this file from whoever shared the project with you (e.g. a shared drive or direct
+   copy) and put it at that exact path.
+
+2. **The search index built from that PDF.** Once the PDF is in place, build it with:
+   ```bash
+   python scripts/build_manual_index.py
+   ```
+   This downloads a small local embedding model on first run and takes a couple of minutes.
+   It writes its output to `data/manual_index/` (also not tracked in git — regenerate it
+   here, on the server, or on any new machine rather than copying it around).
+
+If you skip this step, the rest of the app works normally — only the manual Q&A chat feature
+will return an error until the index is built.
+
+---
+
+## 6. Run the App
 
 Make sure your virtual environment is still active (you should see `(venv)` in your terminal), then run:
 
@@ -88,7 +113,7 @@ You should see the Car Maintenance dashboard.
 
 ---
 
-## 6. First Use
+## 7. First Use
 
 - Your current mileage is tracked via Airtable — add an initial reading via the dashboard
 - All maintenance tasks are stored in Airtable and ready to use
