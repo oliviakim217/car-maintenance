@@ -56,17 +56,18 @@ copy .env.example .env
 
 (On Mac/Linux: `cp .env.example .env`)
 
-Fill in your Airtable credentials:
+Then open `.env` and fill in every value — the app will refuse to start if any of these are
+missing:
 
-```
-APP_ENV=dev
-APP_LOG_LEVEL=INFO
-AIRTABLE_TOKEN=your_airtable_personal_access_token_here
-AIRTABLE_BASE_ID_DEV=appXXXXXXXXXXXXXX
-AIRTABLE_BASE_ID_PROD=appXXXXXXXXXXXXXX
-```
+| Variable | What it's for |
+|---|---|
+| `APP_PASSWORD` | The password you'll type to log in to the dashboard — pick anything |
+| `APP_SECRET_KEY` | A random string used to sign session cookies. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"` and paste the result in |
+| `AIRTABLE_TOKEN` | Found at airtable.com → Account → Developer Hub → Personal access tokens |
+| `AIRTABLE_BASE_ID_DEV` | Your Airtable base ID (starts with `app...`) |
+| `ANTHROPIC_API_KEY` | Found at console.anthropic.com → API Keys. Needed for both the dashboard photo scan and the "Ask the Owner's Manual" chat |
 
-Your Airtable token can be found at airtable.com → Account → Developer Hub → Personal access tokens.
+`APP_ENV` and `APP_LOG_LEVEL` can stay as `dev` and `INFO` for local development.
 
 ---
 
