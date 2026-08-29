@@ -3,7 +3,7 @@ applyTo: "**"
 ---
 
 # Scalability and Extension Contract
-# Version: 1.0.0
+# Version: 1.1.0
 # This file defines HOW to extend the Car Maintenance app without modifying existing code.
 
 ## Core Principle
@@ -45,6 +45,42 @@ Every extension point below requires config changes or new files — not edits t
 → Credentials go in `.env` only — never in YAML or code
 → Config (rate limits, thresholds, templates) goes in YAML config
 → Do NOT modify `airtable_service.py` or any existing module
+
+## Vendor-Swappable Capabilities (Placeholder Pattern)
+
+Some capabilities are likely to change vendors later even if only one implementation exists
+today — the vector store behind `manual_qa` is the current example (local `.npy` files today;
+could become Pinecone, Qdrant, or pgvector later). For these, add the placeholder seam NOW,
+before a second vendor exists, so the future swap is additive instead of a rewrite.
+
+### Identify a vendor-swappable capability
+→ Ask: "if I switched providers for this, would business logic need to change?" If yes, it
+  needs a placeholder interface now.
+→ Current example: vector search in `manual_qa_service.py` (`_search_manual_chunks` calling
+  `numpy` directly against `embeddings.npy`) is a vendor-swappable capability with only one
+  vendor — "local file" — implemented so far.
+
+### Add the placeholder interface
+→ Create a dedicated service file: `backend/services/<capability>_service.py`
+  (e.g. `vector_store_service.py`) — this is the ONLY file allowed to know which vendor is
+  active.
+→ Expose vendor-agnostic function signatures only, e.g.:
+   - `vector_store_search(query_embedding: np.ndarray, top_k: int) -> list[dict]`
+   - `vector_store_upsert(chunks: list[dict]) -> None`
+→ Move the current implementation behind that interface even though there is only one vendor —
+  do not wait for a second vendor to justify the seam.
+→ Business logic (e.g. `manual_qa_service.py`) calls only these functions — never a vendor SDK,
+  `numpy`, or a file path directly.
+→ Which implementation is active is chosen by config (`vector_store.provider` in
+  `config.yaml`), never hardcoded — see `Config Files` rules in `CLAUDE.md`.
+
+### Swap or add a vendor later
+→ Add a new implementation module (e.g. `backend/services/vector_store_pinecone.py`) satisfying
+  the same interface.
+→ Add the new vendor's prefix to the External Service Prefix Contract table in
+  `naming-rules.md` before writing code (e.g. `pinecone_`, `PINECONE_`, `PineconeConfig`).
+→ Point config at the new provider.
+→ Zero changes to `manual_qa_service.py`, routes, or any other consumer of the interface.
 
 ## Rules for Adding Code
 

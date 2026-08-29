@@ -1,11 +1,11 @@
 ---
 description: "Production environment config for Car Maintenance app"
 environment: "prod"
-version: "2.3.0"
-last_updated: "2026-08-08"
+version: "2.4.0"
+last_updated: "2026-08-22"
 ---
 
-version: 5
+version: 6
 
 vehicle:
   year: 2021
@@ -50,3 +50,6 @@ manual_qa:
   embedding_model: "BAAI/bge-small-en-v1.5"
   top_k_chunks: 5
   model: "claude-haiku-4-5-20251001"
+
+vector_store:
+  provider: local_file

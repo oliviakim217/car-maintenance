@@ -7,7 +7,6 @@ Claude to answer using only those excerpts.
 """
 
 import asyncio
-import json
 import logging
 import os
 import time
@@ -15,7 +14,6 @@ from functools import lru_cache
 
 import anthropic
 import httpx
-import numpy as np
 from fastembed import TextEmbedding
 
 from backend.constants import (
@@ -25,6 +23,7 @@ from backend.constants import (
     MANUAL_QA_EMBEDDINGS_PATH,
 )
 from backend.modules.manual_qa.models import AskManualResponse
+from backend.services.vector_store_service import vector_store_search
 
 logger = logging.getLogger(__name__)
 
@@ -35,35 +34,26 @@ def _get_embedding_model(embedding_model_name: str) -> TextEmbedding:
     return TextEmbedding(model_name=embedding_model_name)
 
 
-@lru_cache(maxsize=1)
-def _get_manual_index() -> tuple[list[dict], np.ndarray]:
-    """Load and cache the pre-built manual chunk index.
-
-    Raises:
-        FileNotFoundError: If the index has not been built yet.
-    """
-    if not MANUAL_QA_CHUNKS_PATH.exists() or not MANUAL_QA_EMBEDDINGS_PATH.exists():
-        raise FileNotFoundError(
-            "Manual index not found — run scripts/build_manual_index.py first"
-        )
-    with open(MANUAL_QA_CHUNKS_PATH, "r", encoding="utf-8") as chunks_file_handle:
-        chunks = json.load(chunks_file_handle)
-    embeddings = np.load(MANUAL_QA_EMBEDDINGS_PATH)
-    return chunks, embeddings
-
-
-def _search_manual_chunks(question: str, embedding_model_name: str, top_k: int) -> list[dict]:
+def _search_manual_chunks(
+    question: str, embedding_model_name: str, top_k: int, vector_store_provider: str
+) -> list[dict]:
     """Find the top_k manual chunks most relevant to the question.
 
-    Synchronous and CPU-bound (embedding + similarity search) — must be
-    called via asyncio.to_thread from async code, never awaited directly.
+    Synchronous and CPU-bound (embedding + vector search) — must be called
+    via asyncio.to_thread from async code, never awaited directly.
+
+    Raises:
+        FileNotFoundError: If the manual index has not been built yet.
     """
-    chunks, embeddings = _get_manual_index()
     embedding_model = _get_embedding_model(embedding_model_name)
     question_embedding = list(embedding_model.query_embed(question))[0]
-    scores = np.dot(embeddings, question_embedding)
-    top_indices = np.argsort(scores)[::-1][:top_k]
-    return [chunks[i] for i in top_indices]
+    return vector_store_search(
+        query_embedding=question_embedding,
+        top_k=top_k,
+        provider=vector_store_provider,
+        chunks_path=MANUAL_QA_CHUNKS_PATH,
+        embeddings_path=MANUAL_QA_EMBEDDINGS_PATH,
+    )
 
 
 async def ask_manual_question(question: str, cfg) -> AskManualResponse:
@@ -94,6 +84,7 @@ async def ask_manual_question(question: str, cfg) -> AskManualResponse:
             question,
             cfg.manual_qa.embedding_model,
             cfg.manual_qa.top_k_chunks,
+            cfg.vector_store.provider,
         )
         excerpts_text = "\n\n".join(
             f"[Page {chunk['page']}]\n{chunk['text']}" for chunk in relevant_chunks
