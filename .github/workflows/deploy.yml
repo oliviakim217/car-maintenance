@@ -1,0 +1,28 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy on VM
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_APP_DIR: ${{ vars.DEPLOY_APP_DIR }}
+        with:
+          host: ${{ secrets.UBUNTU_VM_HOST }}
+          username: ${{ secrets.UBUNTU_VM_USER }}
+          key: ${{ secrets.UBUNTU_VM_SSH_KEY }}
+          port: ${{ secrets.UBUNTU_VM_PORT }}
+          script_stop: true
+          command_timeout: 10m
+          envs: DEPLOY_APP_DIR
+          script: |
+            set -euo pipefail
+            : "${DEPLOY_APP_DIR:?Set repository variable DEPLOY_APP_DIR, e.g. /opt/car-maintenance}"
+            cd "${DEPLOY_APP_DIR}"
+            /bin/bash ./deploy.sh
