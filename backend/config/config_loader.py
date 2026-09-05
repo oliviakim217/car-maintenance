@@ -82,6 +82,12 @@ class ManualQaConfig(BaseModel):
     model: str
 
 
+class VectorStoreConfig(BaseModel):
+    """Vector store provider selection for vector search (e.g. manual_qa)."""
+
+    provider: str
+
+
 class AppConfig(BaseModel):
     """Root application configuration model."""
 
@@ -93,6 +99,7 @@ class AppConfig(BaseModel):
     rate_limiting: RateLimitingConfig
     dashboard_scan: DashboardScanConfig
     manual_qa: ManualQaConfig
+    vector_store: VectorStoreConfig
 
 
 # ---------------------------------------------------------------------------
